@@ -4,10 +4,14 @@ import './index.css'
 import App from './App'
 import posthog from 'posthog-js'
 
-posthog.init('phc_8svND4SMHnm5j6VsW9kDdXLlqL3izJQ88rhssgy6CCb', {
-    api_host: 'https://us.i.posthog.com',
-    person_profiles: 'identified_only',
-})
+const posthogKey = import.meta.env.VITE_POSTHOG_KEY
+
+if (posthogKey) {
+    posthog.init(posthogKey, {
+        api_host: 'https://us.i.posthog.com',
+        person_profiles: 'identified_only',
+    })
+}
 
 const rootElement = document.getElementById('root')
 if (!rootElement) throw new Error('Failed to find the root element')

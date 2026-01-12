@@ -20,6 +20,8 @@ import (
 	"github.com/stacksnap/stacksnap/internal/storage"
 )
 
+var PostHogKey string
+
 type Server struct {
 	mux           *http.ServeMux
 	provider      storage.Provider
@@ -82,13 +84,15 @@ func NewServer(provider storage.Provider, uiFS fs.FS) *Server {
 	}
 
 	// Initialize Telemetry
-	phClient, _ := posthog.NewWithConfig(
-		"phc_8svND4SMHnm5j6VsW9kDdXLlqL3izJQ88rhssgy6CCb",
-		posthog.Config{
-			Endpoint: "https://us.i.posthog.com",
-		},
-	)
-	s.phClient = phClient
+	if PostHogKey != "" {
+		phClient, _ := posthog.NewWithConfig(
+			PostHogKey,
+			posthog.Config{
+				Endpoint: "https://us.i.posthog.com",
+			},
+		)
+		s.phClient = phClient
+	}
 
 	// Anonymized Machine ID (using hostname for simplicity as a base)
 	hostname, _ := os.Hostname()

@@ -12,15 +12,20 @@ rm -rf "$STAGING_DIR"
 mkdir -p "$STAGING_DIR/usr/local/bin"
 mkdir -p "$STAGING_DIR/Library/LaunchAgents"
 
+# Load local environment variables if they exist
+if [ -f .env ]; then
+  source .env
+fi
+
 echo "🎨 Building Web UI..."
-cd ui && npm run build && cd ..
+cd ui && VITE_POSTHOG_KEY="$POSTHOG_PROJECT_API_KEY" npm run build && cd ..
 
 # Ensure dist exists in cmd/stacksnap/
 mkdir -p cmd/stacksnap/dist
 cp -r ui/dist/* cmd/stacksnap/dist/
 
 echo "⏳ Building Binary..."
-go build -o stacksnap cmd/stacksnap/main.go
+go build -ldflags "-X github.com/stacksnap/stacksnap/internal/api.PostHogKey=$POSTHOG_PROJECT_API_KEY" -o stacksnap cmd/stacksnap/main.go
 
 echo "📂 Preparing Files..."
 # Copy binary
