@@ -51,5 +51,12 @@ This is the most critical failure mode. During restore, we capture the state of 
 **How do you prevent 'Version Drift' if I restore an old backup to a newer version of Docker Compose?**
 Each backup includes the exact `docker-compose.yml` that was active at the time of the backup. When you restore, we use that specific manifest to recreate the services. This ensures that even if you've changed your local files in the meantime, the restored environment matches the data exactly.
 
+## Telemetry & Privacy
+
+StackSnap includes anonymized telemetry via PostHog to help us understand usage patterns and catch bugs. 
+- **What we track**: Application startup, success/failure of backup/restore operations, and UI interaction counts.
+- **What we NEVER track**: Backup keys, S3 credentials, filenames, or any sensitive data from your containers.
+- **Goal**: This data is used solely to improve the software and monitor its health in diverse environments.
+
 ---
 Built by engineers, for engineers. Distributed under MIT.

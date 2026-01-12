@@ -15,6 +15,7 @@
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-tabs": "^1.1.13",
     "framer-motion": "^11.0.0",
+    "posthog-js": "^1.318.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "recharts": "^3.6.0"

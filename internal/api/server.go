@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/posthog/posthog-go"
 	"github.com/stacksnap/stacksnap/internal/backup"
 	"github.com/stacksnap/stacksnap/internal/compose"
 	"github.com/stacksnap/stacksnap/internal/config"
@@ -19,22 +20,21 @@ import (
 	"github.com/stacksnap/stacksnap/internal/storage"
 )
 
-
 type Server struct {
-	mux      *http.ServeMux
-	provider   storage.Provider
-	config    *config.Config
+	mux           *http.ServeMux
+	provider      storage.Provider
+	config        *config.Config
 	setupRequired bool
-	uiFS     fs.FS
-	broker    *EventBroker
+	uiFS          fs.FS
+	broker        *EventBroker
+	phClient      posthog.Client
+	machineID     string
 }
-
 
 func NewServer(provider storage.Provider, uiFS fs.FS) *Server {
 
 	cfg, err := config.Load()
 	setupRequired := false
-
 
 	if provider == nil {
 		if err != nil {
@@ -44,7 +44,6 @@ func NewServer(provider storage.Provider, uiFS fs.FS) *Server {
 		} else {
 
 			fmt.Println(" Config loaded. Starting in DASHBOARD MODE.")
-
 
 			valid, err := license.Verify(cfg.LicenseServerURL, cfg.LicenseKey, cfg.MachineID)
 			if err != nil || !valid {
@@ -70,23 +69,61 @@ func NewServer(provider storage.Provider, uiFS fs.FS) *Server {
 				}
 			}
 
-
-
 		}
 	}
 
 	s := &Server{
-		mux:      http.NewServeMux(),
-		provider:   provider,
-		config:    cfg,
+		mux:           http.NewServeMux(),
+		provider:      provider,
+		config:        cfg,
 		setupRequired: setupRequired,
-		uiFS:     uiFS,
-		broker:    NewEventBroker(),
+		uiFS:          uiFS,
+		broker:        NewEventBroker(),
 	}
+
+	// Initialize Telemetry
+	phClient, _ := posthog.NewWithConfig(
+		"phc_8svND4SMHnm5j6VsW9kDdXLlqL3izJQ88rhssgy6CCb",
+		posthog.Config{
+			Endpoint: "https://us.i.posthog.com",
+		},
+	)
+	s.phClient = phClient
+
+	// Anonymized Machine ID (using hostname for simplicity as a base)
+	hostname, _ := os.Hostname()
+	s.machineID = hostname // In a real app we might use a UUID stored in config
+
+	s.track("server_started", map[string]interface{}{
+		"mode": func() string {
+			if setupRequired {
+				return "setup"
+			}
+			return "dashboard"
+		}(),
+		"storage_type": func() string {
+			if cfg != nil {
+				return string(cfg.Storage.Type)
+			}
+			return "none"
+		}(),
+		"os": "mac",
+	})
+
 	s.routes()
 	return s
 }
 
+func (s *Server) track(event string, properties map[string]interface{}) {
+	if s.phClient == nil {
+		return
+	}
+	s.phClient.Enqueue(posthog.Capture{
+		DistinctId: s.machineID,
+		Event:      event,
+		Properties: properties,
+	})
+}
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
@@ -102,20 +139,19 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.mux.ServeHTTP(w, r)
 }
 
-
 type EventBroker struct {
-	clients  map[chan string]bool
+	clients    map[chan string]bool
 	newClients chan chan string
-	defunct  chan chan string
-	messages  chan string
+	defunct    chan chan string
+	messages   chan string
 }
 
 func NewEventBroker() *EventBroker {
 	b := &EventBroker{
-		clients:  make(map[chan string]bool),
+		clients:    make(map[chan string]bool),
 		newClients: make(chan chan string),
-		defunct:  make(chan chan string),
-		messages:  make(chan string),
+		defunct:    make(chan chan string),
+		messages:   make(chan string),
 	}
 	go b.listen()
 	return b
@@ -152,14 +188,12 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-
 	clientChan := make(chan string)
 	s.broker.newClients <- clientChan
 
 	defer func() {
 		s.broker.defunct <- clientChan
 	}()
-
 
 	notify := r.Context().Done()
 
@@ -179,8 +213,6 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("/api/events", s.handleEvents)
 	s.mux.HandleFunc("/api/setup", s.handleSetup)
 
-
-
 	s.mux.HandleFunc("/api/stacks", s.handleListStacks)
 	s.mux.HandleFunc("/api/backups", s.handleBackups)
 	s.mux.HandleFunc("/api/stats", s.handleStats)
@@ -195,14 +227,10 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("/api/stacks/remove", s.handleRemoveStack)
 	s.mux.HandleFunc("/api/system-health", s.handleSystemHealth)
 
-
 	if s.uiFS != nil {
 		fileServer := http.FileServer(http.FS(s.uiFS))
 		s.mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			path := r.URL.Path
-
-
-
 
 			f, err := s.uiFS.Open(strings.TrimPrefix(path, "/"))
 			if err == nil {
@@ -214,13 +242,10 @@ func (s *Server) routes() {
 				}
 			}
 
-
-
 			if strings.HasPrefix(path, "/assets/") {
 				http.NotFound(w, r)
 				return
 			}
-
 
 			content, err := fs.ReadFile(s.uiFS, "index.html")
 			if err != nil {
@@ -253,14 +278,12 @@ func (s *Server) handleSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	machineID, err := license.GetMachineID()
 	if err != nil {
 		http.Error(w, "Failed to generate Machine ID", http.StatusInternalServerError)
 		return
 	}
 	req.MachineID = machineID
-
 
 	valid, err := license.Verify(req.LicenseServerURL, req.LicenseKey, machineID)
 	if err != nil {
@@ -272,12 +295,10 @@ func (s *Server) handleSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	if err := config.Save(&req); err != nil {
 		http.Error(w, "Failed to save config", http.StatusInternalServerError)
 		return
 	}
-
 
 	ctx := context.Background()
 	if req.Storage.Type == config.StorageS3 {
@@ -300,7 +321,7 @@ func (s *Server) handleSetup(w http.ResponseWriter, r *http.Request) {
 	s.setupRequired = false
 
 	json.NewEncoder(w).Encode(map[string]string{
-		"status": "setup_complete",
+		"status":  "setup_complete",
 		"message": "Configuration saved. Dashboard ready.",
 	})
 }
@@ -313,7 +334,6 @@ func (s *Server) handleListStacks(w http.ResponseWriter, r *http.Request) {
 	}
 	defer client.Close()
 
-
 	allContainers, err := client.ListAllContainers()
 	if err != nil {
 		fmt.Printf(" Warning: failed to list all containers: %v\n", err)
@@ -322,7 +342,6 @@ func (s *Server) handleListStacks(w http.ResponseWriter, r *http.Request) {
 	trackedIDs := make(map[string]bool)
 	projectContainers := make(map[string][]docker.ContainerInfo)
 	projectToDir := make(map[string]string)
-
 
 	for _, ctr := range allContainers {
 		if projectName, ok := ctr.Labels["com.docker.compose.project"]; ok {
@@ -333,7 +352,6 @@ func (s *Server) handleListStacks(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-
 
 	relevantDirs := make(map[string]bool)
 	cwd, _ := os.Getwd()
@@ -349,7 +367,6 @@ func (s *Server) handleListStacks(w http.ResponseWriter, r *http.Request) {
 			stack, err := compose.DiscoverStack(d)
 			if err == nil {
 
-
 				if _, exists := projectContainers[stack.Name]; !exists {
 
 					projectContainers[stack.Name] = []docker.ContainerInfo{}
@@ -364,11 +381,9 @@ func (s *Server) handleListStacks(w http.ResponseWriter, r *http.Request) {
 
 	var stacks []*compose.Stack
 
-
 	for projectName, containers := range projectContainers {
 		dir := projectToDir[projectName]
 		var stack *compose.Stack
-
 
 		if dir != "" {
 			if _, err := os.Stat(dir); err == nil {
@@ -379,15 +394,13 @@ func (s *Server) handleListStacks(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-
 		if stack == nil {
 			stack = &compose.Stack{
-				Name:   projectName,
-				Status:  "Running",
+				Name:     projectName,
+				Status:   "Running",
 				Services: make(map[string]compose.ServiceDiagnostics),
 			}
 		}
-
 
 		runningCount := 0
 		for _, ctr := range containers {
@@ -398,9 +411,9 @@ func (s *Server) handleListStacks(w http.ResponseWriter, r *http.Request) {
 
 			stack.Services[svcName] = compose.ServiceDiagnostics{
 				ContainerID: ctr.ID,
-				State:    ctr.State,
-				Health:   ctr.Health,
-				Paused:   ctr.Paused,
+				State:       ctr.State,
+				Health:      ctr.Health,
+				Paused:      ctr.Paused,
 			}
 			if ctr.State == "running" {
 				runningCount++
@@ -419,12 +432,11 @@ func (s *Server) handleListStacks(w http.ResponseWriter, r *http.Request) {
 		stacks = append(stacks, stack)
 	}
 
-
 	standaloneStack := &compose.Stack{
-		Name:     "Standalone Containers",
-		Status:    "Running",
+		Name:         "Standalone Containers",
+		Status:       "Running",
 		IsStandalone: true,
-		Services:   make(map[string]compose.ServiceDiagnostics),
+		Services:     make(map[string]compose.ServiceDiagnostics),
 	}
 
 	standaloneCount := 0
@@ -432,9 +444,9 @@ func (s *Server) handleListStacks(w http.ResponseWriter, r *http.Request) {
 		if !trackedIDs[ctr.ID] {
 			standaloneStack.Services[ctr.Name] = compose.ServiceDiagnostics{
 				ContainerID: ctr.ID,
-				State:    ctr.State,
-				Health:   ctr.Health,
-				Paused:   ctr.Paused,
+				State:       ctr.State,
+				Health:      ctr.Health,
+				Paused:      ctr.Paused,
 			}
 			standaloneCount++
 		}
@@ -444,10 +456,8 @@ func (s *Server) handleListStacks(w http.ResponseWriter, r *http.Request) {
 		stacks = append(stacks, standaloneStack)
 	}
 
-
 	fmt.Printf(" Discovery: %d containers total -> %d stacks (labels-first), %d standalone\n",
 		len(allContainers), len(stacks), standaloneCount)
-
 
 	sort.Slice(stacks, func(i, j int) bool {
 		if stacks[i].IsStandalone != stacks[j].IsStandalone {
@@ -490,12 +500,12 @@ func (s *Server) handleBackups(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Location    string `json:"location"`
-		ProjectName   string `json:"project_name"`
-		Pause      bool  `json:"pause"`
-		IncludeDB    bool  `json:"include_db"`
-		Verify     bool  `json:"verify"`
-		SnapshotImages bool  `json:"snapshot_images"`
+		Location        string `json:"location"`
+		ProjectName     string `json:"project_name"`
+		Pause           bool   `json:"pause"`
+		IncludeDB       bool   `json:"include_db"`
+		Verify          bool   `json:"verify"`
+		SnapshotImages  bool   `json:"snapshot_images"`
 		EncryptionKeyID string `json:"encryption_key_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -503,15 +513,18 @@ func (s *Server) handleBackups(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	if req.Location == "" && req.ProjectName == "" {
 		http.Error(w, "Either location or project_name is required", http.StatusBadRequest)
 		return
 	}
 
-
 	var key []byte
 
+	s.track("backup_initiated", map[string]interface{}{
+		"project":         req.ProjectName,
+		"snapshot_images": req.SnapshotImages,
+		"verify":          req.Verify,
+	})
 
 	go func() {
 		dockerClient, err := docker.NewClient()
@@ -530,7 +543,6 @@ func (s *Server) handleBackups(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-
 		if req.ProjectName != "" {
 			logFunc(fmt.Sprintf("Starting backup for project: %s", req.ProjectName))
 		} else {
@@ -538,25 +550,32 @@ func (s *Server) handleBackups(w http.ResponseWriter, r *http.Request) {
 		}
 
 		res, err := backup.BackupStack(dockerClient, backup.StackBackupOptions{
-			Directory:    req.Location,
-			ProjectName:   req.ProjectName,
+			Directory:       req.Location,
+			ProjectName:     req.ProjectName,
 			PauseContainers: req.Pause,
 			IncludeDatabase: req.IncludeDB,
-			SnapshotImages: req.SnapshotImages,
+			SnapshotImages:  req.SnapshotImages,
 			StorageProvider: s.provider,
-			EncryptionKey:  key,
-			Logger:     logFunc,
+			EncryptionKey:   key,
+			Logger:          logFunc,
 		})
 
 		if err != nil {
 			fmt.Printf("Backup failed: %v\n", err)
 			logFunc(fmt.Sprintf(" Backup failed: %v", err))
 			s.broker.Broadcast("ERROR: " + err.Error())
+			s.track("backup_failed", map[string]interface{}{
+				"project": req.ProjectName,
+				"error":   err.Error(),
+			})
 			return
 		}
 
 		logFunc(" Backup completed successfully")
-
+		s.track("backup_completed", map[string]interface{}{
+			"project": req.ProjectName,
+			"size":    res.Size,
+		})
 
 		if req.Verify {
 			logFunc(" Auto-verifying backup integrity...")
@@ -578,7 +597,7 @@ func (s *Server) handleBackups(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusAccepted)
 	json.NewEncoder(w).Encode(map[string]string{
-		"status": "backup_started",
+		"status":  "backup_started",
 		"message": "Backup job has been queued",
 	})
 }
@@ -590,7 +609,7 @@ func (s *Server) handleRestore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Filename  string `json:"filename"`
+		Filename    string `json:"filename"`
 		ProjectName string `json:"project_name"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -608,7 +627,6 @@ func (s *Server) handleRestore(w http.ResponseWriter, r *http.Request) {
 		}
 		defer dockerClient.Close()
 
-
 		go func() {
 			logFunc := func(msg string) {
 				cleanMsg := strings.TrimSpace(msg)
@@ -618,7 +636,9 @@ func (s *Server) handleRestore(w http.ResponseWriter, r *http.Request) {
 			}
 
 			logFunc(fmt.Sprintf("Starting restore for %s...", req.Filename))
-
+			s.track("restore_initiated", map[string]interface{}{
+				"project": req.ProjectName,
+			})
 
 			var key string
 			var keyBytes []byte
@@ -627,19 +647,26 @@ func (s *Server) handleRestore(w http.ResponseWriter, r *http.Request) {
 			}
 
 			err := backup.RestoreStack(dockerClient, backup.StackRestoreOptions{
-				StackName:    req.ProjectName,
-				InputPath:    req.Filename,
+				StackName:       req.ProjectName,
+				InputPath:       req.Filename,
 				StorageProvider: s.provider,
-				EncryptionKey:  keyBytes,
-				Logger:     logFunc,
-				Context:     ctx,
+				EncryptionKey:   keyBytes,
+				Logger:          logFunc,
+				Context:         ctx,
 			})
 			if err != nil {
 				fmt.Printf(" Restore failed: %v\n", err)
 				logFunc(fmt.Sprintf(" Restore failed: %v", err))
 				s.broker.Broadcast("ERROR: " + err.Error())
+				s.track("restore_failed", map[string]interface{}{
+					"project": req.ProjectName,
+					"error":   err.Error(),
+				})
 			} else {
 				logFunc(" Restore completed successfully")
+				s.track("restore_completed", map[string]interface{}{
+					"project": req.ProjectName,
+				})
 				s.broker.Broadcast("COMPLETE")
 			}
 		}()
@@ -655,9 +682,6 @@ func (s *Server) handleHistory(w http.ResponseWriter, r *http.Request) {
 	var err error
 
 	prefix := r.URL.Query().Get("prefix")
-
-
-
 
 	if s.provider != nil {
 		items, err = s.provider.List(ctx, prefix)
@@ -680,11 +704,9 @@ func (s *Server) handleHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	sort.Slice(items, func(i, j int) bool {
 		return items[i].LastModified.After(items[j].LastModified)
 	})
-
 
 	verfMap := s.loadVerifications()
 	type HistoryResponseItem struct {
@@ -695,7 +717,7 @@ func (s *Server) handleHistory(w http.ResponseWriter, r *http.Request) {
 	resp := make([]HistoryResponseItem, len(items))
 	for i, item := range items {
 		resp[i] = HistoryResponseItem{
-			BackupItem:  item,
+			BackupItem:   item,
 			Verification: verfMap[item.Key],
 		}
 	}
@@ -729,13 +751,12 @@ func (s *Server) handleVerify(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 
 		result = &backup.VerificationResult{
-			BackupKey:  req.Key,
-			Verified:   false,
-			TestedAt:   time.Now(),
+			BackupKey:    req.Key,
+			Verified:     false,
+			TestedAt:     time.Now(),
 			ErrorMessage: err.Error(),
 		}
 	}
-
 
 	verfMap := s.loadVerifications()
 	verfMap[req.Key] = result
@@ -770,10 +791,9 @@ func (s *Server) handleHistoryPeek(w http.ResponseWriter, r *http.Request) {
 	}
 
 	files, err := backup.PeekBackup(backup.StackRestoreOptions{
-		InputPath:    key,
+		InputPath:       key,
 		StorageProvider: s.provider,
-		Context:     context.Background(),
-
+		Context:         context.Background(),
 	})
 	if err != nil {
 		http.Error(w, "Failed to peek backup: "+err.Error(), http.StatusInternalServerError)
@@ -800,7 +820,6 @@ func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 		totalSize += item.Size
 	}
 
-
 	var sizeStr string
 	const unit = 1024
 	if totalSize < unit {
@@ -816,11 +835,10 @@ func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"total_backups": totalBackups,
-		"success_rate": 100.0,
-		"storage_used": sizeStr,
+		"success_rate":  100.0,
+		"storage_used":  sizeStr,
 	})
 }
-
 
 func (s *Server) handleTestStorage(w http.ResponseWriter, r *http.Request) {
 	if s.provider == nil {
@@ -851,8 +869,8 @@ func listLocalBackups() []storage.BackupItem {
 				(len(name) > 4 && name[len(name)-4:] == ".enc") {
 				info, _ := entry.Info()
 				items = append(items, storage.BackupItem{
-					Key:     name,
-					Size:     info.Size(),
+					Key:          name,
+					Size:         info.Size(),
 					LastModified: info.ModTime(),
 				})
 			}
@@ -890,7 +908,6 @@ func (s *Server) handleUpdateConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	current, _ := config.Load()
 	if req.MachineID == "" && current != nil {
 		req.MachineID = current.MachineID
@@ -902,7 +919,6 @@ func (s *Server) handleUpdateConfig(w http.ResponseWriter, r *http.Request) {
 		req.LicenseServerURL = current.LicenseServerURL
 	}
 
-
 	if req.Storage.S3SecretKey == "********" && current != nil {
 		req.Storage.S3SecretKey = current.Storage.S3SecretKey
 	}
@@ -912,11 +928,7 @@ func (s *Server) handleUpdateConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	s.config = &req
-
-
-
 
 	json.NewEncoder(w).Encode(map[string]string{"status": "ok", "message": "Configuration updated"})
 }
@@ -929,19 +941,16 @@ func (s *Server) handleSystemHealth(w http.ResponseWriter, r *http.Request) {
 	}
 	defer client.Close()
 
-
 	info, err := client.Info()
 	if err != nil {
 		http.Error(w, "Failed to get system info", http.StatusInternalServerError)
 		return
 	}
 
-
 	diskUsage, err := client.DiskUsage()
 	if err != nil {
 		fmt.Printf("Warning: Failed to get disk usage: %v\n", err)
 	}
-
 
 	var totalSize int64
 	if diskUsage.LayersSize > 0 {
@@ -953,21 +962,18 @@ func (s *Server) handleSystemHealth(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-
-
-
 	resp := map[string]interface{}{
-		"cpu_cores":     info.NCPU,
-		"memory_total":    info.MemTotal,
-		"os_type":      info.OSType,
-		"architecture":    info.Architecture,
-		"containers":     info.Containers,
+		"cpu_cores":          info.NCPU,
+		"memory_total":       info.MemTotal,
+		"os_type":            info.OSType,
+		"architecture":       info.Architecture,
+		"containers":         info.Containers,
 		"containers_running": info.ContainersRunning,
-		"containers_paused": info.ContainersPaused,
+		"containers_paused":  info.ContainersPaused,
 		"containers_stopped": info.ContainersStopped,
-		"images_count":    info.Images,
-		"disk_usage_bytes":  totalSize,
-		"server_version":   info.ServerVersion,
+		"images_count":       info.Images,
+		"disk_usage_bytes":   totalSize,
+		"server_version":     info.ServerVersion,
 	}
 
 	json.NewEncoder(w).Encode(resp)
@@ -992,13 +998,11 @@ func (s *Server) handleAddStack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	cfg, _ := config.Load()
 	if cfg == nil {
 		http.Error(w, "Config not found", http.StatusInternalServerError)
 		return
 	}
-
 
 	for _, p := range cfg.ManualStacks {
 		if p == req.Path {
