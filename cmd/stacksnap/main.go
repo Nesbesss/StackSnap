@@ -17,15 +17,15 @@ import (
 	"github.com/stacksnap/stacksnap/internal/storage"
 )
 
-
+//go:embed dist
 var uiEmbed embed.FS
 
 var version = "0.3.0"
 
 func main() {
 	rootCmd := &cobra.Command{
-		Use:   "stacksnap",
-		Short:  "Docker backups that actually work when you need them",
+		Use:     "stacksnap",
+		Short:   "Docker backups that actually work when you need them",
 		Version: version,
 	}
 
@@ -43,7 +43,7 @@ func main() {
 
 func discoverCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:  "discover",
+		Use:   "discover",
 		Short: "Discover docker-compose stacks and their volumes",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cwd, err := os.Getwd()
@@ -92,9 +92,9 @@ func backupCmd() *cobra.Command {
 	var pause bool
 
 	cmd := &cobra.Command{
-		Use:  "backup <volume-name>",
+		Use:   "backup <volume-name>",
 		Short: "Backup a Docker volume to a .tar.gz file",
-		Args: cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			volumeName := args[0]
 
@@ -109,8 +109,8 @@ func backupCmd() *cobra.Command {
 			}
 
 			_, err = backup.Backup(client, backup.BackupOptions{
-				VolumeName:   volumeName,
-				OutputPath:   output,
+				VolumeName:      volumeName,
+				OutputPath:      output,
 				PauseContainers: pause,
 			})
 			return err
@@ -127,25 +127,22 @@ func backupStackCmd() *cobra.Command {
 	var pause bool
 	var dumpDatabases bool
 
-
 	var s3Bucket string
 	var s3Region string
 	var s3Endpoint string
 	var s3AccessKey string
 	var s3SecretKey string
 
-
 	var encryptionKey string
 
 	cmd := &cobra.Command{
-		Use:  "backup-stack",
+		Use:   "backup-stack",
 		Short: "Backup an entire docker-compose stack (all volumes + compose file)",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cwd, err := os.Getwd()
 			if err != nil {
 				return fmt.Errorf("failed to get current directory: %w", err)
 			}
-
 
 			var keyBytes []byte
 			if encryptionKey != "" {
@@ -154,7 +151,6 @@ func backupStackCmd() *cobra.Command {
 				}
 				keyBytes = []byte(encryptionKey)
 			}
-
 
 			var provider storage.Provider
 			if s3Bucket != "" {
@@ -176,12 +172,12 @@ func backupStackCmd() *cobra.Command {
 			}
 
 			_, err = backup.BackupStack(client, backup.StackBackupOptions{
-				Directory:    cwd,
-				OutputPath:   output,
+				Directory:       cwd,
+				OutputPath:      output,
 				PauseContainers: pause,
 				IncludeDatabase: dumpDatabases,
 				StorageProvider: provider,
-				EncryptionKey:  keyBytes,
+				EncryptionKey:   keyBytes,
 			})
 			return err
 		},
@@ -204,9 +200,9 @@ func backupStackCmd() *cobra.Command {
 
 func restoreCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:  "restore <volume-name> <backup-file>",
+		Use:   "restore <volume-name> <backup-file>",
 		Short: "Restore a Docker volume from a .tar.gz backup",
-		Args: cobra.ExactArgs(2),
+		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			volumeName := args[0]
 			backupFile := args[1]
@@ -223,7 +219,7 @@ func restoreCmd() *cobra.Command {
 
 			_, err = backup.Restore(client, backup.RestoreOptions{
 				VolumeName: volumeName,
-				InputPath: backupFile,
+				InputPath:  backupFile,
 			})
 			return err
 		},
@@ -232,9 +228,9 @@ func restoreCmd() *cobra.Command {
 
 func listCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:  "list [prefix]",
+		Use:   "list [prefix]",
 		Short: "List Docker volumes",
-		Args: cobra.MaximumNArgs(1),
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := docker.NewClient()
 			if err != nil {
@@ -273,7 +269,6 @@ func listCmd() *cobra.Command {
 func serverCmd() *cobra.Command {
 	var port int
 
-
 	var s3Bucket string
 	var s3Region string
 	var s3Endpoint string
@@ -281,7 +276,7 @@ func serverCmd() *cobra.Command {
 	var s3SecretKey string
 
 	cmd := &cobra.Command{
-		Use:  "server",
+		Use:   "server",
 		Short: "Start the API server and Web UI",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
@@ -294,7 +289,6 @@ func serverCmd() *cobra.Command {
 				}
 				fmt.Printf(" Using S3 Storage: %s (Endpoint: %s)\n", s3Bucket, s3Endpoint)
 			}
-
 
 			var uiFS fs.FS
 			uiFS, err := fs.Sub(uiEmbed, "dist")
