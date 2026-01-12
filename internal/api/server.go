@@ -83,8 +83,8 @@ func NewServer(provider storage.Provider, uiFS fs.FS) *Server {
 		broker:        NewEventBroker(),
 	}
 
-	
 	if PostHogKey != "" {
+		fmt.Println(" [Telemetry] Active")
 		phClient, _ := posthog.NewWithConfig(
 			PostHogKey,
 			posthog.Config{
@@ -94,9 +94,8 @@ func NewServer(provider storage.Provider, uiFS fs.FS) *Server {
 		s.phClient = phClient
 	}
 
-	
 	hostname, _ := os.Hostname()
-	s.machineID = hostname 
+	s.machineID = hostname
 
 	s.track("server_started", map[string]interface{}{
 		"mode": func() string {

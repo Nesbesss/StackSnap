@@ -32,6 +32,7 @@ export default function App() {
 
   const [_error, setError] = useState("")
   const [backingUp, setBackingUp] = useState<string | null>(null)
+  const [targetName, setTargetName] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [showGlobalActivity, setShowGlobalActivity] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -150,8 +151,7 @@ export default function App() {
   }
 
   const handleRestore = (filename: string) => {
-
-    setBackingUp(`Restoring ${filename}...`)
+    setTargetName(filename)
     setProgressActive(true)
     setProgressLogs([])
     setProgressError(null)
@@ -350,11 +350,12 @@ export default function App() {
           <OperationProgress
             isOpen={true}
             operation={backingUp ? "backup" : "restore"}
-            targetName={backingUp || "Restore Operation"}
+            targetName={backingUp || targetName || "Restore Operation"}
             logs={progressLogs}
             error={progressError}
             onComplete={() => {
               setBackingUp(null)
+              setTargetName(null)
               setProgressActive(false)
               setProgressLogs([])
               setProgressError(null)
