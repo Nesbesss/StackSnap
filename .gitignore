@@ -1,0 +1,27 @@
+# Binaries
+stacksnap
+license-server/license-server
+*.pkg
+
+# Go
+vendor/
+*.log
+*.test
+*.out
+cover.out
+
+# Node / UI
+node_modules/
+dist/
+.next/
+*.tsbuildinfo
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
+
+# Backups and Downloads
+*.tar.gz
+testdata/
+*.db

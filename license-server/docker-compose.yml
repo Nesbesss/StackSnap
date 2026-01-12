@@ -1,0 +1,26 @@
+services:
+  license-server:
+    build: .
+    container_name: stacksnap-license-server
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - SMTP_HOST=mailhog
+      - SMTP_PORT=1025
+      - SMTP_SEND=license@stacksnap.io
+    depends_on:
+      - mailhog
+    restart: always
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: stacksnap-mailhog
+    ports:
+      - "1025:1025" # SMTP port
+      - "8025:8025" # UI port
+    restart: always
+
+# Note: The main app connects to this via http://localhost:8081 if running on the host,
+# or http://license-server:8081 if running in the same docker network.
