@@ -83,7 +83,7 @@ func NewServer(provider storage.Provider, uiFS fs.FS) *Server {
 		broker:        NewEventBroker(),
 	}
 
-	// Initialize Telemetry
+	
 	if PostHogKey != "" {
 		phClient, _ := posthog.NewWithConfig(
 			PostHogKey,
@@ -94,9 +94,9 @@ func NewServer(provider storage.Provider, uiFS fs.FS) *Server {
 		s.phClient = phClient
 	}
 
-	// Anonymized Machine ID (using hostname for simplicity as a base)
+	
 	hostname, _ := os.Hostname()
-	s.machineID = hostname // In a real app we might use a UUID stored in config
+	s.machineID = hostname 
 
 	s.track("server_started", map[string]interface{}{
 		"mode": func() string {
