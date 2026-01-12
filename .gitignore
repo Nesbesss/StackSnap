@@ -1,7 +1,6 @@
 # Binaries
 stacksnap
 license-server/license-server
-*.pkg
 
 # Go
 vendor/
