@@ -40,15 +40,15 @@ func NewServer(provider storage.Provider, uiFS fs.FS) *Server {
 		if err != nil {
 
 			setupRequired = true
-			fmt.Println("⚠️  Config not found. Starting in SETUP MODE.")
+			fmt.Println("  Config not found. Starting in SETUP MODE.")
 		} else {
 
-			fmt.Println("✅ Config loaded. Starting in DASHBOARD MODE.")
+			fmt.Println(" Config loaded. Starting in DASHBOARD MODE.")
 
 
 			valid, err := license.Verify(cfg.LicenseServerURL, cfg.LicenseKey, cfg.MachineID)
 			if err != nil || !valid {
-				fmt.Println("❌ INVALID LICENSE. Reverting to SETUP MODE.")
+				fmt.Println(" INVALID LICENSE. Reverting to SETUP MODE.")
 				setupRequired = true
 			} else {
 
@@ -316,7 +316,7 @@ func (s *Server) handleListStacks(w http.ResponseWriter, r *http.Request) {
 
 	allContainers, err := client.ListAllContainers()
 	if err != nil {
-		fmt.Printf("⚠️  Warning: failed to list all containers: %v\n", err)
+		fmt.Printf("  Warning: failed to list all containers: %v\n", err)
 	}
 
 	trackedIDs := make(map[string]bool)
@@ -445,7 +445,7 @@ func (s *Server) handleListStacks(w http.ResponseWriter, r *http.Request) {
 	}
 
 
-	fmt.Printf("🔍 Discovery: %d containers total -> %d stacks (labels-first), %d standalone\n",
+	fmt.Printf(" Discovery: %d containers total -> %d stacks (labels-first), %d standalone\n",
 		len(allContainers), len(stacks), standaloneCount)
 
 
@@ -550,22 +550,22 @@ func (s *Server) handleBackups(w http.ResponseWriter, r *http.Request) {
 
 		if err != nil {
 			fmt.Printf("Backup failed: %v\n", err)
-			logFunc(fmt.Sprintf("❌ Backup failed: %v", err))
+			logFunc(fmt.Sprintf(" Backup failed: %v", err))
 			s.broker.Broadcast("ERROR: " + err.Error())
 			return
 		}
 
-		logFunc("✅ Backup completed successfully")
+		logFunc(" Backup completed successfully")
 
 
 		if req.Verify {
-			logFunc("🔍 Auto-verifying backup integrity...")
+			logFunc(" Auto-verifying backup integrity...")
 			vRes, vErr := backup.VerifyBackup(context.Background(), dockerClient, s.provider, res.OutputPath)
 			if vErr != nil {
-				logFunc(fmt.Sprintf("❌ Verification failed: %v", vErr))
+				logFunc(fmt.Sprintf(" Verification failed: %v", vErr))
 
 			} else {
-				logFunc(fmt.Sprintf("✅ Verified (Checksum: %s)", "OK"))
+				logFunc(fmt.Sprintf(" Verified (Checksum: %s)", "OK"))
 
 				verfMap := s.loadVerifications()
 				verfMap[res.OutputPath] = vRes
@@ -635,11 +635,11 @@ func (s *Server) handleRestore(w http.ResponseWriter, r *http.Request) {
 				Context:         ctx,
 			})
 			if err != nil {
-				fmt.Printf("❌ Restore failed: %v\n", err)
-				logFunc(fmt.Sprintf("❌ Restore failed: %v", err))
+				fmt.Printf(" Restore failed: %v\n", err)
+				logFunc(fmt.Sprintf(" Restore failed: %v", err))
 				s.broker.Broadcast("ERROR: " + err.Error())
 			} else {
-				logFunc("✅ Restore completed successfully")
+				logFunc(" Restore completed successfully")
 				s.broker.Broadcast("COMPLETE")
 			}
 		}()

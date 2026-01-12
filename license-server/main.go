@@ -125,12 +125,12 @@ func sendLicenseEmail(to, key string) {
 		auth := smtp.PlainAuth("", SMTPUser, SMTPPass, SMTPHost)
 		err := smtp.SendMail(SMTPHost+":"+SMTPPort, auth, SMTPSend, []string{to}, []byte(msg))
 		if err != nil {
-			log.Printf("❌ FAILED TO SEND EMAIL: %v", err)
+			log.Printf(" FAILED TO SEND EMAIL: %v", err)
 		} else {
-			log.Printf("✅ EMAIL SENT TO: %s", to)
+			log.Printf(" EMAIL SENT TO: %s", to)
 		}
 	} else {
-		log.Printf("📧 [MOCK EMAIL] TO: %s | KEY: %s", to, key)
+		log.Printf(" [MOCK EMAIL] TO: %s | KEY: %s", to, key)
 	}
 }
 
@@ -149,7 +149,7 @@ func handleVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("🔍 Verifying Key: %s for Machine: %s", req.LicenseKey, req.MachineID)
+	log.Printf(" Verifying Key: %s for Machine: %s", req.LicenseKey, req.MachineID)
 
 	var storedMachineID string
 	var email string
@@ -177,19 +177,19 @@ func handleVerify(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Activation failed", http.StatusInternalServerError)
 			return
 		}
-		log.Printf("✅ Activated License %s for %s", req.LicenseKey, email)
+		log.Printf(" Activated License %s for %s", req.LicenseKey, email)
 		json.NewEncoder(w).Encode(map[string]interface{}{"valid": true, "activated": true})
 		return
 	}
 
 	if storedMachineID == req.MachineID {
-		log.Printf("✅ Verified License %s", req.LicenseKey)
+		log.Printf(" Verified License %s", req.LicenseKey)
 		json.NewEncoder(w).Encode(map[string]interface{}{"valid": true})
 		return
 	}
 
 
-	log.Printf("❌ License Check Failed: Key used on different machine")
+	log.Printf(" License Check Failed: Key used on different machine")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"valid":  false,
 		"reason": "already_activated_on_another_machine",
@@ -208,6 +208,6 @@ func main() {
 	http.HandleFunc("/api/verify", handleVerify)
 
 	port := "8081"
-	fmt.Printf("🏪 License Server running on http://localhost:%s\n", port)
+	fmt.Printf(" License Server running on http://localhost:%s\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

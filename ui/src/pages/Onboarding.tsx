@@ -202,7 +202,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                         v1.0.0-BETA
                     </div>
                     <p className="text-[10px] text-muted-foreground text-center">
-                        <span className="font-bold text-yellow-600/80">⚠️ BETA DISCLAIMER:</span> Using this software involves risk.
+                        <span className="font-bold text-yellow-600/80"> BETA DISCLAIMER:</span> Using this software involves risk.
                         No warranties are provided. Always manual-test your recovery plan.
                     </p>
                 </CardFooter>

@@ -25,3 +25,4 @@ dist/
 *.tar.gz
 testdata/
 *.db
+.env

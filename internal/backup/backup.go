@@ -49,7 +49,7 @@ func Backup(client *docker.Client, opts BackupOptions) (*BackupResult, error) {
 
 		for _, ctr := range containers {
 			if ctr.State == "running" {
-				fmt.Printf("⏸️  Pausing container %s...\n", ctr.Name)
+				fmt.Printf("⏸  Pausing container %s...\n", ctr.Name)
 				if err := client.PauseContainer(ctr.ID); err != nil {
 
 					for _, id := range pausedContainers {
@@ -64,9 +64,9 @@ func Backup(client *docker.Client, opts BackupOptions) (*BackupResult, error) {
 
 		defer func() {
 			for _, id := range pausedContainers {
-				fmt.Printf("▶️  Resuming container...\n")
+				fmt.Printf("  Resuming container...\n")
 				if err := client.UnpauseContainer(id); err != nil {
-					fmt.Printf("⚠️  Warning: failed to unpause container: %v\n", err)
+					fmt.Printf("  Warning: failed to unpause container: %v\n", err)
 				}
 			}
 		}()
@@ -89,7 +89,7 @@ func Backup(client *docker.Client, opts BackupOptions) (*BackupResult, error) {
 
 	gzWriter := gzip.NewWriter(outFile)
 
-	fmt.Printf("🔄 Backing up volume %q...\n", opts.VolumeName)
+	fmt.Printf(" Backing up volume %q...\n", opts.VolumeName)
 
 
 	if err := client.BackupVolume(opts.VolumeName, gzWriter); err != nil {
@@ -118,7 +118,7 @@ func Backup(client *docker.Client, opts BackupOptions) (*BackupResult, error) {
 		pauseNote = fmt.Sprintf(" (paused %d container(s))", len(pausedContainers))
 	}
 
-	fmt.Printf("✅ Backup complete: %s (%.2f MB in %s)%s\n",
+	fmt.Printf(" Backup complete: %s (%.2f MB in %s)%s\n",
 		outputPath,
 		float64(stat.Size())/(1024*1024),
 		duration.Round(time.Millisecond),

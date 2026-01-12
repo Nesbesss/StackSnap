@@ -1,6 +1,6 @@
 # StackSnap Documentation (v1.0 BETA)
 
-## ⚠️ Important Disclaimer
+##  Important Disclaimer
 StackSnap is currently in **BETA**. 
 - Use at your own risk.
 - The authors are not liable for any data loss.

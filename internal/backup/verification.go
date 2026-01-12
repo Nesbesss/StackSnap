@@ -86,7 +86,7 @@ func VerifyBackup(ctx context.Context, client *docker.Client, provider storage.P
 
 
 	if !hasCompose || metadata.ComposeFile == "" {
-		fmt.Printf("ℹ️  Performing Data-Only verification for %s\n", key)
+		fmt.Printf("ℹ  Performing Data-Only verification for %s\n", key)
 
 
 		missingVolumes := []string{}
@@ -118,7 +118,7 @@ func VerifyBackup(ctx context.Context, client *docker.Client, provider storage.P
 	defer func() {
 		defer cleanupCancel()
 
-		fmt.Printf("🧹 Cleaning up verification containers (project: %s)...\n", projectName)
+		fmt.Printf(" Cleaning up verification containers (project: %s)...\n", projectName)
 
 
 		cleanupCmd := exec.CommandContext(cleanupCtx, "docker", "compose",
@@ -126,10 +126,10 @@ func VerifyBackup(ctx context.Context, client *docker.Client, provider storage.P
 		cleanupCmd.Dir = tempDir
 		if err := cleanupCmd.Run(); err != nil {
 
-			fmt.Printf("⚠️  Compose down failed, forcing cleanup: %v\n", err)
+			fmt.Printf("  Compose down failed, forcing cleanup: %v\n", err)
 			forceCleanupVerificationContainers(cleanupCtx, client, projectName)
 		} else {
-			fmt.Println("✅ Verification containers cleaned up")
+			fmt.Println(" Verification containers cleaned up")
 		}
 	}()
 
@@ -229,24 +229,24 @@ func forceCleanupVerificationContainers(ctx context.Context, client *docker.Clie
 
 	containers, err := client.ListContainersForProject(projectName)
 	if err != nil {
-		fmt.Printf("⚠️  Failed to list containers for cleanup: %v\n", err)
+		fmt.Printf("  Failed to list containers for cleanup: %v\n", err)
 		return
 	}
 
 	for _, ctr := range containers {
-		fmt.Printf("🗑️  Force removing container: %s\n", ctr.Name)
+		fmt.Printf("  Force removing container: %s\n", ctr.Name)
 
 
 		if ctr.State == "running" || ctr.State == "paused" {
 			if err := client.StopContainer(ctr.ID); err != nil {
-				fmt.Printf("⚠️  Failed to stop container %s: %v\n", ctr.Name, err)
+				fmt.Printf("  Failed to stop container %s: %v\n", ctr.Name, err)
 			}
 		}
 
 
 		cmd := exec.CommandContext(ctx, "docker", "rm", "-f", ctr.ID)
 		if err := cmd.Run(); err != nil {
-			fmt.Printf("⚠️  Failed to remove container %s: %v\n", ctr.Name, err)
+			fmt.Printf("  Failed to remove container %s: %v\n", ctr.Name, err)
 		}
 	}
 
@@ -257,7 +257,7 @@ func forceCleanupVerificationContainers(ctx context.Context, client *docker.Clie
 		volumes := strings.Split(strings.TrimSpace(string(output)), "\n")
 		for _, vol := range volumes {
 			if vol != "" {
-				fmt.Printf("🗑️  Removing volume: %s\n", vol)
+				fmt.Printf("  Removing volume: %s\n", vol)
 				exec.CommandContext(ctx, "docker", "volume", "rm", "-f", vol).Run()
 			}
 		}
@@ -293,7 +293,7 @@ func VerifyBackupLight(ctx context.Context, provider storage.Provider, key strin
 		ChecksPerformed: []string{},
 	}
 
-	fmt.Printf("🔍 Running lightweight verification on %s...\n", key)
+	fmt.Printf(" Running lightweight verification on %s...\n", key)
 
 
 	var rc io.ReadCloser
@@ -418,7 +418,7 @@ func VerifyBackupLight(ctx context.Context, provider storage.Provider, key strin
 
 
 	result.Verified = true
-	fmt.Printf("✅ Lightweight verification passed (%d volumes, %d checks)\n",
+	fmt.Printf(" Lightweight verification passed (%d volumes, %d checks)\n",
 		volumeCount, len(result.ChecksPerformed))
 
 	return result, nil

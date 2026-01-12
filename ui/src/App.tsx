@@ -256,7 +256,7 @@ export default function App() {
 
   useEffect(() => {
     if (!setupRequired && !checkingAuth) {
-      console.log("🔌 Connecting to Event Stream...")
+      console.log(" Connecting to Event Stream...")
       const evtSource = new EventSource("http://localhost:8080/api/events")
 
       evtSource.onmessage = (event) => {

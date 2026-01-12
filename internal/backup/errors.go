@@ -29,7 +29,7 @@ type BackupError struct {
 func (e *BackupError) Error() string {
 	msg := fmt.Sprintf("[%s] %s: %v", e.Phase, e.Component, e.Err)
 	if e.Suggestion != "" {
-		msg += fmt.Sprintf("\n💡 Suggestion: %s", e.Suggestion)
+		msg += fmt.Sprintf("\n Suggestion: %s", e.Suggestion)
 	}
 	return msg
 }

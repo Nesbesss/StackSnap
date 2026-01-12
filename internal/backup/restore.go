@@ -48,7 +48,7 @@ func Restore(client *docker.Client, opts RestoreOptions) (*RestoreResult, error)
 		return nil, fmt.Errorf("volume %q not found", opts.VolumeName)
 	}
 
-	fmt.Printf("🔄 Restoring volume %q from %s (%.2f MB)...\n",
+	fmt.Printf(" Restoring volume %q from %s (%.2f MB)...\n",
 		opts.VolumeName,
 		opts.InputPath,
 		float64(stat.Size())/(1024*1024))
@@ -74,7 +74,7 @@ func Restore(client *docker.Client, opts RestoreOptions) (*RestoreResult, error)
 
 	duration := time.Since(startTime)
 
-	fmt.Printf("✅ Restore complete: %s restored in %s\n",
+	fmt.Printf(" Restore complete: %s restored in %s\n",
 		opts.VolumeName,
 		duration.Round(time.Millisecond))
 
