@@ -58,9 +58,9 @@ export function OperationProgress({ isOpen, operation, targetName, onComplete, e
 
     useEffect(() => {
         if (logs.length > 0) {
-            const lastLog = logs[logs.length - 1] || ""
+            const lastLog = (logs[logs.length - 1] || "").toUpperCase()
 
-            if (lastLog.includes("Operation Completed Successfully") || lastLog.includes("COMPLETE")) {
+            if (lastLog.includes("COMPLETE") || lastLog.includes("SUCCESS") || lastLog.includes("SUCCESSFULLY")) {
                 setProgress(100)
                 setCurrentStep(STEPS[operation].length - 1)
 
@@ -113,11 +113,54 @@ export function OperationProgress({ isOpen, operation, targetName, onComplete, e
 
 
     useEffect(() => {
-        if (externalLogs && isOpen && progress < 100) {
+        if (!isOpen || !externalLogs || externalLogs.length === 0) return
 
-            setProgress(p => Math.min(95, Math.max(p, externalLogs.length * 4)))
+        const currentLogs = externalLogs
+        const lastLog = currentLogs[currentLogs.length - 1].toLowerCase()
+        const steps = STEPS[operation]
+
+        const LOG_KEYWORDS: Record<string, string[]> = {
+            backup: [
+                "starting backup",
+                "stopping container",
+                "exporting",
+                "snapshotting",
+                "compressing",
+                "verifying",
+                "finalizing"
+            ],
+            restore: [
+                "starting restore",
+                "downloading",
+                "decrypting",
+                "stopping container",
+                "restoring volume",
+                "restoring snapshot image",
+                "recreating containers"
+            ]
         }
-    }, [externalLogs, isOpen, progress])
+
+        const keywords = LOG_KEYWORDS[operation]
+        let detectedStep = currentStep
+
+        for (let i = 0; i < keywords.length; i++) {
+            if (lastLog.includes(keywords[i])) {
+                detectedStep = Math.max(detectedStep, i)
+            }
+        }
+
+        if (detectedStep !== currentStep) {
+            setCurrentStep(detectedStep)
+        }
+
+        const baseProgress = (detectedStep / steps.length) * 100
+        const logBoost = Math.min(10, (currentLogs.length % 5) * 2)
+        const totalProgress = Math.min(98, baseProgress + logBoost)
+
+        if (totalProgress > progress) {
+            setProgress(totalProgress)
+        }
+    }, [externalLogs, isOpen, operation])
 
     if (!isOpen) return null
 
