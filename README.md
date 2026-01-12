@@ -11,10 +11,17 @@ No more "hoping" your cron job ran correctly. No more manual database dumps. Sta
 - **Streamed Visibility**: Real-time log streaming via SSE gives you absolute certainty during long-running operations.
 - **Verification First**: Every backup can be automatically verified. If it can't be decompressed or decrypted, it's not a backup—it's just a file.
 
-## Getting Started
+## Quick Installation
 
-### The Quick Way
-Download the [compiled package](StackSnap.pkg) and install it on your Mac.
+[![Download StackSnap](https://img.shields.io/badge/Download-StackSnap.pkg-blue?style=for-the-badge&logo=apple)](StackSnap.pkg?raw=true)
+
+1. **Download** the `StackSnap.pkg` file above.
+2. **Install** it on your Mac.
+3. **Open** `http://localhost:8080` to start.
+
+---
+
+## Technical Overview
 
 ### The Developer Way
 ```bash
