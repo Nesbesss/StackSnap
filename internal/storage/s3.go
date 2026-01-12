@@ -14,9 +14,9 @@ import (
 )
 
 type S3Provider struct {
-	client   *s3.Client
+	client  *s3.Client
 	uploader *manager.Uploader
-	bucket   string
+	bucket  string
 }
 
 
@@ -50,9 +50,9 @@ func NewS3Provider(ctx context.Context, bucket, region, endpoint, accessKey, sec
 	})
 
 	return &S3Provider{
-		client:   client,
+		client:  client,
 		uploader: manager.NewUploader(client),
-		bucket:   bucket,
+		bucket:  bucket,
 	}, nil
 }
 
@@ -60,8 +60,8 @@ func (s *S3Provider) Upload(ctx context.Context, key string, data io.Reader) err
 
 	_, err := s.uploader.Upload(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(s.bucket),
-		Key:    aws.String(key),
-		Body:   data,
+		Key:  aws.String(key),
+		Body:  data,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to upload to S3: %w", err)
@@ -72,7 +72,7 @@ func (s *S3Provider) Upload(ctx context.Context, key string, data io.Reader) err
 func (s *S3Provider) Download(ctx context.Context, key string) (io.ReadCloser, error) {
 	resp, err := s.client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(s.bucket),
-		Key:    aws.String(key),
+		Key:  aws.String(key),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to download from S3: %w", err)
@@ -92,8 +92,8 @@ func (s *S3Provider) List(ctx context.Context, prefix string) ([]BackupItem, err
 	var items []BackupItem
 	for _, obj := range output.Contents {
 		items = append(items, BackupItem{
-			Key:          *obj.Key,
-			Size:         *obj.Size,
+			Key:     *obj.Key,
+			Size:     *obj.Size,
 			LastModified: *obj.LastModified,
 		})
 	}

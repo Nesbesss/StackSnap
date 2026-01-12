@@ -25,25 +25,25 @@ const GCMChunkSize = 64 * 1024
 
 
 var (
-	ErrInvalidHeader        = errors.New("invalid encryption header")
-	ErrUnsupportedVersion   = errors.New("unsupported encryption version")
+	ErrInvalidHeader    = errors.New("invalid encryption header")
+	ErrUnsupportedVersion  = errors.New("unsupported encryption version")
 	ErrAuthenticationFailed = errors.New("authentication failed: backup may be corrupted or tampered")
 )
 
 
 type EncryptedHeader struct {
-	Magic   [5]byte
+	Magic  [5]byte
 	Version byte
-	Nonce   [12]byte
+	Nonce  [12]byte
 }
 
 
 type gcmWriter struct {
-	aead    cipher.AEAD
-	nonce   []byte
+	aead  cipher.AEAD
+	nonce  []byte
 	counter uint64
-	w       io.Writer
-	buf     []byte
+	w    io.Writer
+	buf   []byte
 }
 
 func (g *gcmWriter) Write(p []byte) (int, error) {
@@ -136,21 +136,21 @@ func NewEncryptWriterGCM(key []byte, w io.Writer) (io.WriteCloser, error) {
 	}
 
 	return &gcmWriter{
-		aead:  aead,
+		aead: aead,
 		nonce: nonce,
-		w:     w,
-		buf:   make([]byte, 0, GCMChunkSize),
+		w:   w,
+		buf:  make([]byte, 0, GCMChunkSize),
 	}, nil
 }
 
 
 type gcmReader struct {
-	aead    cipher.AEAD
-	nonce   []byte
+	aead  cipher.AEAD
+	nonce  []byte
 	counter uint64
-	r       io.Reader
-	buf     []byte
-	eof     bool
+	r    io.Reader
+	buf   []byte
+	eof   bool
 }
 
 func (g *gcmReader) Read(p []byte) (int, error) {
@@ -239,9 +239,9 @@ func NewDecryptReaderGCM(key []byte, r io.Reader) (io.Reader, error) {
 	}
 
 	return &gcmReader{
-		aead:  aead,
+		aead: aead,
 		nonce: nonce,
-		r:     r,
+		r:   r,
 	}, nil
 }
 
@@ -283,9 +283,9 @@ func NewDecryptReader(key []byte, r io.Reader) (io.Reader, error) {
 			}
 
 			return &gcmReader{
-				aead:  aead,
+				aead: aead,
 				nonce: nonce,
-				r:     r,
+				r:   r,
 			}, nil
 
 		case VersionCTR:

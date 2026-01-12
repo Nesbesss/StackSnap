@@ -83,17 +83,17 @@ func (c *Client) ListVolumes(prefix string) ([]string, error) {
 
 
 type ContainerInfo struct {
-	ID           string
-	Name         string
-	Image        string
-	State        string
-	Health       string
+	ID      string
+	Name     string
+	Image    string
+	State    string
+	Health    string
 	RestartCount int
-	Uptime       string
-	Error        string
-	Paused       bool
-	Labels       map[string]string
-	Volumes      []string
+	Uptime    string
+	Error    string
+	Paused    bool
+	Labels    map[string]string
+	Volumes   []string
 }
 
 
@@ -115,10 +115,10 @@ func (c *Client) ListContainersUsingVolume(volumeName string) ([]ContainerInfo, 
 			}
 		}
 		result = append(result, ContainerInfo{
-			ID:     ctr.ID,
-			Name:   name,
-			Image:  ctr.Image,
-			State:  ctr.State,
+			ID:   ctr.ID,
+			Name:  name,
+			Image: ctr.Image,
+			State: ctr.State,
 			Paused: ctr.State == "paused",
 		})
 	}
@@ -152,10 +152,10 @@ func (c *Client) ListAllContainers() ([]ContainerInfo, error) {
 		}
 
 		result = append(result, ContainerInfo{
-			ID:     ctr.ID,
-			Name:   name,
-			Image:  ctr.Image,
-			State:  ctr.State,
+			ID:   ctr.ID,
+			Name:  name,
+			Image: ctr.Image,
+			State: ctr.State,
 			Health: health,
 			Paused: ctr.State == "paused",
 			Labels: ctr.Labels,
@@ -262,11 +262,11 @@ func (c *Client) ListContainersForProject(projectName string) ([]ContainerInfo, 
 		}
 
 		result = append(result, ContainerInfo{
-			ID:      ctr.ID,
-			Name:    name,
-			Image:   ctr.Image,
-			State:   ctr.State,
-			Labels:  ctr.Labels,
+			ID:   ctr.ID,
+			Name:  name,
+			Image:  ctr.Image,
+			State:  ctr.State,
+			Labels: ctr.Labels,
 			Volumes: volumes,
 		})
 	}
@@ -276,7 +276,7 @@ func (c *Client) ListContainersForProject(projectName string) ([]ContainerInfo, 
 
 func (c *Client) ExecInContainer(containerID string, cmd []string) ([]byte, error) {
 	execConfig := container.ExecOptions{
-		Cmd:          cmd,
+		Cmd:     cmd,
 		AttachStdout: true,
 		AttachStderr: true,
 	}
@@ -332,14 +332,14 @@ func (c *Client) BackupVolume(volumeName string, w io.Writer) error {
 
 
 	resp, err := c.cli.ContainerCreate(c.ctx, &container.Config{
-		Image:        "alpine:latest",
-		Cmd:          []string{"tar", "-cf", "-", "-C", "/volume", "."},
+		Image:    "alpine:latest",
+		Cmd:     []string{"tar", "-cf", "-", "-C", "/volume", "."},
 		AttachStdout: true,
 		AttachStderr: true,
 	}, &container.HostConfig{
 		Mounts: []mount.Mount{
 			{
-				Type:   mount.TypeVolume,
+				Type:  mount.TypeVolume,
 				Source: volumeName,
 				Target: "/volume",
 			},
@@ -395,15 +395,15 @@ func (c *Client) RestoreVolume(volumeName string, r io.Reader) error {
 
 
 	resp, err := c.cli.ContainerCreate(c.ctx, &container.Config{
-		Image:       "alpine:latest",
-		Cmd:         []string{"tar", "-xf", "-", "-C", "/volume"},
-		OpenStdin:   true,
-		StdinOnce:   true,
+		Image:    "alpine:latest",
+		Cmd:     []string{"tar", "-xf", "-", "-C", "/volume"},
+		OpenStdin:  true,
+		StdinOnce:  true,
 		AttachStdin: true,
 	}, &container.HostConfig{
 		Mounts: []mount.Mount{
 			{
-				Type:   mount.TypeVolume,
+				Type:  mount.TypeVolume,
 				Source: volumeName,
 				Target: "/volume",
 			},
@@ -417,7 +417,7 @@ func (c *Client) RestoreVolume(volumeName string, r io.Reader) error {
 
 	attachResp, err := c.cli.ContainerAttach(c.ctx, resp.ID, container.AttachOptions{
 		Stream: true,
-		Stdin:  true,
+		Stdin: true,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to attach to container: %w", err)
@@ -554,7 +554,7 @@ func (c *Client) GetContainerLogs(containerID string, tail int) (string, error) 
 	options := container.LogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
-		Tail:       fmt.Sprintf("%v", tail),
+		Tail:    fmt.Sprintf("%v", tail),
 	}
 
 	reader, err := c.cli.ContainerLogs(c.ctx, containerID, options)
@@ -599,15 +599,15 @@ func (c *Client) GetProjectDiagnostics(workDir string) (map[string]ContainerInfo
 		}
 
 		diagnostics[serviceName] = ContainerInfo{
-			ID:           ctr.ID,
-			Name:         name,
-			Image:        ctr.Image,
-			State:        inspect.State.Status,
-			Health:       health,
+			ID:      ctr.ID,
+			Name:     name,
+			Image:    ctr.Image,
+			State:    inspect.State.Status,
+			Health:    health,
 			RestartCount: inspect.RestartCount,
-			Uptime:       inspect.State.StartedAt,
-			Error:        inspect.State.Error,
-			Paused:       inspect.State.Paused,
+			Uptime:    inspect.State.StartedAt,
+			Error:    inspect.State.Error,
+			Paused:    inspect.State.Paused,
 		}
 	}
 	return diagnostics, nil
@@ -617,7 +617,7 @@ func (c *Client) GetProjectDiagnostics(workDir string) (map[string]ContainerInfo
 func (c *Client) CommitContainer(containerID string, ref string) (string, error) {
 	resp, err := c.cli.ContainerCommit(c.ctx, containerID, container.CommitOptions{
 		Reference: ref,
-		Comment:   "Created by StackSnap Backup",
+		Comment:  "Created by StackSnap Backup",
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to commit container: %w", err)

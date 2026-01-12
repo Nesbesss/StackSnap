@@ -12,20 +12,20 @@ import (
 
 type PreflightWarning struct {
 	Severity string
-	Message  string
-	Fix      string
+	Message string
+	Fix   string
 }
 
 
 type PreflightResult struct {
-	Warnings   []PreflightWarning
+	Warnings  []PreflightWarning
 	CanProceed bool
 }
 
 
 func PreflightChecks(client *docker.Client, opts StackBackupOptions) *PreflightResult {
 	result := &PreflightResult{
-		Warnings:   []PreflightWarning{},
+		Warnings:  []PreflightWarning{},
 		CanProceed: true,
 	}
 
@@ -33,8 +33,8 @@ func PreflightChecks(client *docker.Client, opts StackBackupOptions) *PreflightR
 	if err := client.Ping(); err != nil {
 		result.Warnings = append(result.Warnings, PreflightWarning{
 			Severity: "error",
-			Message:  "Docker socket not accessible: " + err.Error(),
-			Fix:      "Ensure Docker is running and you have permission to access /var/run/docker.sock",
+			Message: "Docker socket not accessible: " + err.Error(),
+			Fix:   "Ensure Docker is running and you have permission to access /var/run/docker.sock",
 		})
 		result.CanProceed = false
 		return result
@@ -73,8 +73,8 @@ func PreflightChecks(client *docker.Client, opts StackBackupOptions) *PreflightR
 		if _, err := os.Stat(opts.Directory); os.IsNotExist(err) {
 			result.Warnings = append(result.Warnings, PreflightWarning{
 				Severity: "error",
-				Message:  "Stack directory not found: " + opts.Directory,
-				Fix:      "Verify the directory path is correct",
+				Message: "Stack directory not found: " + opts.Directory,
+				Fix:   "Verify the directory path is correct",
 			})
 			result.CanProceed = false
 		}
@@ -91,8 +91,8 @@ func PreflightChecks(client *docker.Client, opts StackBackupOptions) *PreflightR
 		if _, err := opts.StorageProvider.List(ctx, ""); err != nil {
 			result.Warnings = append(result.Warnings, PreflightWarning{
 				Severity: "warning",
-				Message:  "S3 storage not reachable: " + err.Error(),
-				Fix:      "Check your AWS credentials and network connectivity",
+				Message: "S3 storage not reachable: " + err.Error(),
+				Fix:   "Check your AWS credentials and network connectivity",
 			})
 
 		}
@@ -103,8 +103,8 @@ func PreflightChecks(client *docker.Client, opts StackBackupOptions) *PreflightR
 		if len(opts.EncryptionKey) != 32 {
 			result.Warnings = append(result.Warnings, PreflightWarning{
 				Severity: "error",
-				Message:  fmt.Sprintf("Invalid encryption key length: %d bytes (expected 32)", len(opts.EncryptionKey)),
-				Fix:      "Use a 32-byte (256-bit) encryption key",
+				Message: fmt.Sprintf("Invalid encryption key length: %d bytes (expected 32)", len(opts.EncryptionKey)),
+				Fix:   "Use a 32-byte (256-bit) encryption key",
 			})
 			result.CanProceed = false
 		}

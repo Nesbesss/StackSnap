@@ -20,18 +20,18 @@ const RecoveryKitVersion = 1
 
 
 type RecoveryKit struct {
-	Version      int    `json:"version"`
-	Salt         string `json:"salt"`
+	Version   int  `json:"version"`
+	Salt     string `json:"salt"`
 	EncryptedKey string `json:"encrypted_key"`
-	Hint         string `json:"hint,omitempty"`
+	Hint     string `json:"hint,omitempty"`
 }
 
 
 const (
-	argon2Time    = 3
-	argon2Memory  = 64 * 1024
+	argon2Time  = 3
+	argon2Memory = 64 * 1024
 	argon2Threads = 4
-	argon2KeyLen  = 32
+	argon2KeyLen = 32
 )
 
 
@@ -77,10 +77,10 @@ func CreateRecoveryKit(backupKey []byte, passphrase string, hint string) (*Recov
 	ciphertext := aead.Seal(nonce, nonce, backupKey, nil)
 
 	return &RecoveryKit{
-		Version:      RecoveryKitVersion,
-		Salt:         hex.EncodeToString(salt),
+		Version:   RecoveryKitVersion,
+		Salt:     hex.EncodeToString(salt),
 		EncryptedKey: hex.EncodeToString(ciphertext),
-		Hint:         hint,
+		Hint:     hint,
 	}, nil
 }
 

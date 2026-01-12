@@ -28,11 +28,11 @@ var (
 
 
 type License struct {
-	Key       string    `json:"key"`
-	Email     string    `json:"email"`
-	MachineID string    `json:"machine_id"`
-	Plan      string    `json:"plan"`
-	Active    bool      `json:"active"`
+	Key    string  `json:"key"`
+	Email   string  `json:"email"`
+	MachineID string  `json:"machine_id"`
+	Plan   string  `json:"plan"`
+	Active  bool   `json:"active"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -76,7 +76,7 @@ func handleBuy(w http.ResponseWriter, r *http.Request) {
 
 	var req struct {
 		Email string `json:"email"`
-		Plan  string `json:"plan"`
+		Plan string `json:"plan"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
@@ -106,9 +106,9 @@ func handleBuy(w http.ResponseWriter, r *http.Request) {
 
 
 	json.NewEncoder(w).Encode(map[string]string{
-		"status":  "success",
+		"status": "success",
 		"message": "License sent to email!",
-		"key":     key,
+		"key":   key,
 	})
 }
 
@@ -142,7 +142,7 @@ func handleVerify(w http.ResponseWriter, r *http.Request) {
 
 	var req struct {
 		LicenseKey string `json:"license_key"`
-		MachineID  string `json:"machine_id"`
+		MachineID string `json:"machine_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
@@ -191,7 +191,7 @@ func handleVerify(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf(" License Check Failed: Key used on different machine")
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"valid":  false,
+		"valid": false,
 		"reason": "already_activated_on_another_machine",
 	})
 }

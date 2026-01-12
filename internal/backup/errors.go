@@ -7,22 +7,22 @@ import (
 
 
 var (
-	ErrDiskFull                = errors.New("insufficient disk space for backup")
-	ErrNetworkTimeout          = errors.New("network timeout during upload")
-	ErrPermissionDenied        = errors.New("permission denied accessing volume")
-	ErrCorruptedTar            = errors.New("tar archive corrupted during creation")
-	ErrS3AccessDenied          = errors.New("S3 access denied: check credentials")
-	ErrEncryptionFailed        = errors.New("encryption failed: invalid key")
+	ErrDiskFull        = errors.New("insufficient disk space for backup")
+	ErrNetworkTimeout     = errors.New("network timeout during upload")
+	ErrPermissionDenied    = errors.New("permission denied accessing volume")
+	ErrCorruptedTar      = errors.New("tar archive corrupted during creation")
+	ErrS3AccessDenied     = errors.New("S3 access denied: check credentials")
+	ErrEncryptionFailed    = errors.New("encryption failed: invalid key")
 	ErrDockerSocketUnavailable = errors.New("cannot connect to Docker socket")
-	ErrVolumeNotFound          = errors.New("volume not found")
+	ErrVolumeNotFound     = errors.New("volume not found")
 )
 
 
 type BackupError struct {
-	Phase      string
-	Component  string
-	Err        error
-	Retryable  bool
+	Phase   string
+	Component string
+	Err    error
+	Retryable bool
 	Suggestion string
 }
 
@@ -41,10 +41,10 @@ func (e *BackupError) Unwrap() error {
 
 func NewBackupError(phase, component string, err error, retryable bool, suggestion string) *BackupError {
 	return &BackupError{
-		Phase:      phase,
-		Component:  component,
-		Err:        err,
-		Retryable:  retryable,
+		Phase:   phase,
+		Component: component,
+		Err:    err,
+		Retryable: retryable,
 		Suggestion: suggestion,
 	}
 }

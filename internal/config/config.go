@@ -12,25 +12,25 @@ type StorageType string
 
 const (
 	StorageLocal StorageType = "local"
-	StorageS3    StorageType = "s3"
+	StorageS3  StorageType = "s3"
 )
 
 type Config struct {
-	LicenseKey       string        `yaml:"license_key" json:"license_key"`
-	LicenseServerURL string        `yaml:"license_server_url,omitempty" json:"license_server_url,omitempty"`
-	MachineID        string        `yaml:"machine_id" json:"machine_id"`
-	Storage          StorageConfig `yaml:"storage" json:"storage"`
-	ManualStacks     []string      `yaml:"manual_stacks,omitempty" json:"manual_stacks,omitempty"`
+	LicenseKey    string    `yaml:"license_key" json:"license_key"`
+	LicenseServerURL string    `yaml:"license_server_url,omitempty" json:"license_server_url,omitempty"`
+	MachineID    string    `yaml:"machine_id" json:"machine_id"`
+	Storage     StorageConfig `yaml:"storage" json:"storage"`
+	ManualStacks   []string   `yaml:"manual_stacks,omitempty" json:"manual_stacks,omitempty"`
 }
 
 type StorageConfig struct {
-	Type        StorageType `yaml:"type" json:"type"`
-	Path        string      `yaml:"path,omitempty" json:"path,omitempty"`
-	S3Bucket    string      `yaml:"s3_bucket,omitempty" json:"s3_bucket,omitempty"`
-	S3Region    string      `yaml:"s3_region,omitempty" json:"s3_region,omitempty"`
-	S3Endpoint  string      `yaml:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty"`
-	S3AccessKey string      `yaml:"s3_access_key,omitempty" json:"s3_access_key,omitempty"`
-	S3SecretKey string      `yaml:"s3_secret_key,omitempty" json:"s3_secret_key,omitempty"`
+	Type    StorageType `yaml:"type" json:"type"`
+	Path    string   `yaml:"path,omitempty" json:"path,omitempty"`
+	S3Bucket  string   `yaml:"s3_bucket,omitempty" json:"s3_bucket,omitempty"`
+	S3Region  string   `yaml:"s3_region,omitempty" json:"s3_region,omitempty"`
+	S3Endpoint string   `yaml:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty"`
+	S3AccessKey string   `yaml:"s3_access_key,omitempty" json:"s3_access_key,omitempty"`
+	S3SecretKey string   `yaml:"s3_secret_key,omitempty" json:"s3_secret_key,omitempty"`
 }
 
 func ConfigDir() string {

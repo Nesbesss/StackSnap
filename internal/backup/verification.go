@@ -19,18 +19,18 @@ import (
 
 
 type VerificationResult struct {
-	BackupKey     string    `json:"backup_key"`
-	Verified      bool      `json:"verified"`
-	TestedAt      time.Time `json:"tested_at"`
-	ErrorMessage  string    `json:"error_message,omitempty"`
-	ContainerLogs string    `json:"container_logs,omitempty"`
+	BackupKey   string  `json:"backup_key"`
+	Verified   bool   `json:"verified"`
+	TestedAt   time.Time `json:"tested_at"`
+	ErrorMessage string  `json:"error_message,omitempty"`
+	ContainerLogs string  `json:"container_logs,omitempty"`
 }
 
 
 func VerifyBackup(ctx context.Context, client *docker.Client, provider storage.Provider, key string) (*VerificationResult, error) {
 	result := &VerificationResult{
 		BackupKey: key,
-		TestedAt:  time.Now(),
+		TestedAt: time.Now(),
 	}
 
 
@@ -86,7 +86,7 @@ func VerifyBackup(ctx context.Context, client *docker.Client, provider storage.P
 
 
 	if !hasCompose || metadata.ComposeFile == "" {
-		fmt.Printf("ℹ  Performing Data-Only verification for %s\n", key)
+		fmt.Printf("ℹ Performing Data-Only verification for %s\n", key)
 
 
 		missingVolumes := []string{}
@@ -126,7 +126,7 @@ func VerifyBackup(ctx context.Context, client *docker.Client, provider storage.P
 		cleanupCmd.Dir = tempDir
 		if err := cleanupCmd.Run(); err != nil {
 
-			fmt.Printf("  Compose down failed, forcing cleanup: %v\n", err)
+			fmt.Printf(" Compose down failed, forcing cleanup: %v\n", err)
 			forceCleanupVerificationContainers(cleanupCtx, client, projectName)
 		} else {
 			fmt.Println(" Verification containers cleaned up")
@@ -229,24 +229,24 @@ func forceCleanupVerificationContainers(ctx context.Context, client *docker.Clie
 
 	containers, err := client.ListContainersForProject(projectName)
 	if err != nil {
-		fmt.Printf("  Failed to list containers for cleanup: %v\n", err)
+		fmt.Printf(" Failed to list containers for cleanup: %v\n", err)
 		return
 	}
 
 	for _, ctr := range containers {
-		fmt.Printf("  Force removing container: %s\n", ctr.Name)
+		fmt.Printf(" Force removing container: %s\n", ctr.Name)
 
 
 		if ctr.State == "running" || ctr.State == "paused" {
 			if err := client.StopContainer(ctr.ID); err != nil {
-				fmt.Printf("  Failed to stop container %s: %v\n", ctr.Name, err)
+				fmt.Printf(" Failed to stop container %s: %v\n", ctr.Name, err)
 			}
 		}
 
 
 		cmd := exec.CommandContext(ctx, "docker", "rm", "-f", ctr.ID)
 		if err := cmd.Run(); err != nil {
-			fmt.Printf("  Failed to remove container %s: %v\n", ctr.Name, err)
+			fmt.Printf(" Failed to remove container %s: %v\n", ctr.Name, err)
 		}
 	}
 
@@ -257,7 +257,7 @@ func forceCleanupVerificationContainers(ctx context.Context, client *docker.Clie
 		volumes := strings.Split(strings.TrimSpace(string(output)), "\n")
 		for _, vol := range volumes {
 			if vol != "" {
-				fmt.Printf("  Removing volume: %s\n", vol)
+				fmt.Printf(" Removing volume: %s\n", vol)
 				exec.CommandContext(ctx, "docker", "volume", "rm", "-f", vol).Run()
 			}
 		}
@@ -266,17 +266,17 @@ func forceCleanupVerificationContainers(ctx context.Context, client *docker.Clie
 
 
 type LightVerificationResult struct {
-	BackupKey       string    `json:"backup_key"`
-	Verified        bool      `json:"verified"`
-	TestedAt        time.Time `json:"tested_at"`
-	ErrorMessage    string    `json:"error_message,omitempty"`
-	HasMetadata     bool      `json:"has_metadata"`
-	HasCompose      bool      `json:"has_compose"`
-	HasVolumes      bool      `json:"has_volumes"`
-	HasDatabaseDump bool      `json:"has_database_dump"`
-	VolumeCount     int       `json:"volume_count"`
-	StackName       string    `json:"stack_name,omitempty"`
-	ChecksPerformed []string  `json:"checks_performed"`
+	BackupKey    string  `json:"backup_key"`
+	Verified    bool   `json:"verified"`
+	TestedAt    time.Time `json:"tested_at"`
+	ErrorMessage  string  `json:"error_message,omitempty"`
+	HasMetadata   bool   `json:"has_metadata"`
+	HasCompose   bool   `json:"has_compose"`
+	HasVolumes   bool   `json:"has_volumes"`
+	HasDatabaseDump bool   `json:"has_database_dump"`
+	VolumeCount   int    `json:"volume_count"`
+	StackName    string  `json:"stack_name,omitempty"`
+	ChecksPerformed []string `json:"checks_performed"`
 }
 
 
@@ -288,8 +288,8 @@ type LightVerificationResult struct {
 
 func VerifyBackupLight(ctx context.Context, provider storage.Provider, key string) (*LightVerificationResult, error) {
 	result := &LightVerificationResult{
-		BackupKey:       key,
-		TestedAt:        time.Now(),
+		BackupKey:    key,
+		TestedAt:    time.Now(),
 		ChecksPerformed: []string{},
 	}
 

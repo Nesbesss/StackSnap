@@ -15,18 +15,18 @@ import (
 
 type RestoreOptions struct {
 	VolumeName string
-	InputPath  string
+	InputPath string
 
 	StorageProvider storage.Provider
-	Context         context.Context
-	Logger          func(string)
+	Context     context.Context
+	Logger     func(string)
 }
 
 
 type RestoreResult struct {
 	VolumeName string
-	InputPath  string
-	Duration   time.Duration
+	InputPath string
+	Duration  time.Duration
 }
 
 
@@ -80,7 +80,7 @@ func Restore(client *docker.Client, opts RestoreOptions) (*RestoreResult, error)
 
 	return &RestoreResult{
 		VolumeName: opts.VolumeName,
-		InputPath:  opts.InputPath,
-		Duration:   duration,
+		InputPath: opts.InputPath,
+		Duration:  duration,
 	}, nil
 }

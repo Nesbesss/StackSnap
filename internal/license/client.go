@@ -20,7 +20,7 @@ func Verify(licenseServerURL, key, machineID string) (bool, error) {
 
 	payload := map[string]string{
 		"license_key": key,
-		"machine_id":  machineID,
+		"machine_id": machineID,
 	}
 	body, _ := json.Marshal(payload)
 
@@ -36,7 +36,7 @@ func Verify(licenseServerURL, key, machineID string) (bool, error) {
 	}
 
 	var result struct {
-		Valid  bool   `json:"valid"`
+		Valid bool  `json:"valid"`
 		Reason string `json:"reason"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {

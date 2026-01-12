@@ -18,12 +18,12 @@ import (
 
 
 type StackRestoreOptions struct {
-	StackName       string
-	InputPath       string
+	StackName    string
+	InputPath    string
 	StorageProvider storage.Provider
-	EncryptionKey   []byte
-	Context         context.Context
-	Logger          func(string)
+	EncryptionKey  []byte
+	Context     context.Context
+	Logger     func(string)
 }
 
 
@@ -42,14 +42,14 @@ func RestoreStack(client *docker.Client, opts StackRestoreOptions) error {
 		}
 	}
 
-	log("  Restoring stack %s from %s...\n", opts.StackName, opts.InputPath)
+	log(" Restoring stack %s from %s...\n", opts.StackName, opts.InputPath)
 
 
 	var reader io.ReadCloser
 	var err error
 
 	if opts.StorageProvider != nil {
-		log("  Downloading from remote storage...\n")
+		log(" Downloading from remote storage...\n")
 		reader, err = opts.StorageProvider.Download(ctx, opts.InputPath)
 		if err != nil {
 			return fmt.Errorf("failed to download backup: %w", err)
@@ -107,7 +107,7 @@ func RestoreStack(client *docker.Client, opts StackRestoreOptions) error {
 				}
 
 				if ctr.State == "running" {
-					log("⏸  Stopping container %s for restore...\n", ctr.Name)
+					log("⏸ Stopping container %s for restore...\n", ctr.Name)
 					if err := client.StopContainer(ctr.ID); err == nil {
 						restartedContainers = append(restartedContainers, ctr.ID)
 					}
@@ -148,15 +148,15 @@ func RestoreStack(client *docker.Client, opts StackRestoreOptions) error {
 				recreated = true
 				log(" Containers recreated successfully\n")
 			} else {
-				log("  Map-based restore failed: %v. Falling back to simple restart.\n", err)
+				log(" Map-based restore failed: %v. Falling back to simple restart.\n", err)
 			}
 		}
 
 		if !recreated {
 			for _, id := range restartedContainers {
-				log("  Restarting container %s after restore (legacy restart)...\n", id)
+				log(" Restarting container %s after restore (legacy restart)...\n", id)
 				if err := client.StartContainer(id); err != nil {
-					log("  Warning: failed to restart container %s: %v\n", id, err)
+					log(" Warning: failed to restart container %s: %v\n", id, err)
 				}
 			}
 		}
@@ -202,7 +202,7 @@ func RestoreStack(client *docker.Client, opts StackRestoreOptions) error {
 
 			err := client.RestoreVolume(volName, tarReader)
 			if err != nil {
-				log("  Failed to restore volume %s: %v\n", volName, err)
+				log(" Failed to restore volume %s: %v\n", volName, err)
 			} else {
 				log(" Volume %s restored\n", volName)
 				foundVolumes++
@@ -214,20 +214,20 @@ func RestoreStack(client *docker.Client, opts StackRestoreOptions) error {
 
 			tmpFile, err := os.CreateTemp("", "stacksnap-image-*.tar")
 			if err != nil {
-				log("  Failed to create temp file for image %s: %v\n", header.Name, err)
+				log(" Failed to create temp file for image %s: %v\n", header.Name, err)
 				continue
 			}
 			defer os.Remove(tmpFile.Name())
 
 			if _, err := io.Copy(tmpFile, tarReader); err != nil {
 				tmpFile.Close()
-				log("  Failed to write image temp file %s: %v\n", header.Name, err)
+				log(" Failed to write image temp file %s: %v\n", header.Name, err)
 				continue
 			}
 			tmpFile.Close()
 
 			if err := client.LoadImage(tmpFile.Name()); err != nil {
-				log("  Failed to load image %s: %v\n", header.Name, err)
+				log(" Failed to load image %s: %v\n", header.Name, err)
 				continue
 			}
 
@@ -240,7 +240,7 @@ func RestoreStack(client *docker.Client, opts StackRestoreOptions) error {
 
 
 
-				log("    Retagging to: %s\n", targetImage)
+				log("  Retagging to: %s\n", targetImage)
 
 
 				filterPattern := fmt.Sprintf("stacksnap-backup-%s", serviceName)
@@ -259,16 +259,16 @@ func RestoreStack(client *docker.Client, opts StackRestoreOptions) error {
 
 				if sourceTag != "" && sourceTag != "<none>:<none>" {
 					if err := client.TagImage(sourceTag, targetImage); err != nil {
-						log("  Failed to retag %s to %s: %v\n", sourceTag, targetImage, err)
+						log(" Failed to retag %s to %s: %v\n", sourceTag, targetImage, err)
 					} else {
 						log(" Image restored: %s -> %s\n", sourceTag, targetImage)
 					}
 				} else {
 
 					debugOut, _ := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}", "--filter", "reference=stacksnap-backup*").Output()
-					log("  Could not find loaded image for %s\n", serviceName)
+					log(" Could not find loaded image for %s\n", serviceName)
 					if len(debugOut) > 0 {
-						log("   Available backup images: %s\n", strings.TrimSpace(string(debugOut)))
+						log("  Available backup images: %s\n", strings.TrimSpace(string(debugOut)))
 					}
 				}
 			} else {

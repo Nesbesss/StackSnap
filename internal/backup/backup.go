@@ -12,17 +12,17 @@ import (
 
 
 type BackupOptions struct {
-	VolumeName      string
-	OutputPath      string
+	VolumeName   string
+	OutputPath   string
 	PauseContainers bool
 }
 
 
 type BackupResult struct {
-	VolumeName       string
-	OutputPath       string
-	Size             int64
-	Duration         time.Duration
+	VolumeName    string
+	OutputPath    string
+	Size       int64
+	Duration     time.Duration
 	PausedContainers []string
 }
 
@@ -49,7 +49,7 @@ func Backup(client *docker.Client, opts BackupOptions) (*BackupResult, error) {
 
 		for _, ctr := range containers {
 			if ctr.State == "running" {
-				fmt.Printf("⏸  Pausing container %s...\n", ctr.Name)
+				fmt.Printf("⏸ Pausing container %s...\n", ctr.Name)
 				if err := client.PauseContainer(ctr.ID); err != nil {
 
 					for _, id := range pausedContainers {
@@ -64,9 +64,9 @@ func Backup(client *docker.Client, opts BackupOptions) (*BackupResult, error) {
 
 		defer func() {
 			for _, id := range pausedContainers {
-				fmt.Printf("  Resuming container...\n")
+				fmt.Printf(" Resuming container...\n")
 				if err := client.UnpauseContainer(id); err != nil {
-					fmt.Printf("  Warning: failed to unpause container: %v\n", err)
+					fmt.Printf(" Warning: failed to unpause container: %v\n", err)
 				}
 			}
 		}()
@@ -125,10 +125,10 @@ func Backup(client *docker.Client, opts BackupOptions) (*BackupResult, error) {
 		pauseNote)
 
 	return &BackupResult{
-		VolumeName:       opts.VolumeName,
-		OutputPath:       outputPath,
-		Size:             stat.Size(),
-		Duration:         duration,
+		VolumeName:    opts.VolumeName,
+		OutputPath:    outputPath,
+		Size:       stat.Size(),
+		Duration:     duration,
 		PausedContainers: pausedContainers,
 	}, nil
 }

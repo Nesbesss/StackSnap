@@ -8,8 +8,8 @@ import (
 
 
 type BackupItem struct {
-	Key          string
-	Size         int64
+	Key     string
+	Size     int64
 	LastModified time.Time
 }
 

@@ -22,45 +22,45 @@ import (
 
 
 type StackBackupOptions struct {
-	Directory       string
-	ProjectName     string
-	OutputPath      string
+	Directory    string
+	ProjectName   string
+	OutputPath   string
 	PauseContainers bool
 	IncludeDatabase bool
-	SnapshotImages  bool
+	SnapshotImages bool
 
 
 	StorageProvider storage.Provider
-	EncryptionKey   []byte
-	Context         context.Context
-	Logger          func(string)
+	EncryptionKey  []byte
+	Context     context.Context
+	Logger     func(string)
 }
 
 
 type StackBackupResult struct {
-	StackName        string
-	OutputPath       string
-	Size             int64
-	Duration         time.Duration
-	VolumesBackedUp  []string
-	DatabasesDumped  []string
+	StackName    string
+	OutputPath    string
+	Size       int64
+	Duration     time.Duration
+	VolumesBackedUp []string
+	DatabasesDumped []string
 	PausedContainers int
-	Encrypted        bool
+	Encrypted    bool
 }
 
 
 type StackMetadata struct {
-	StackName    string    `json:"stack_name"`
-	CreatedAt    time.Time `json:"created_at"`
-	ComposeFile  string    `json:"compose_file"`
-	Volumes      []string  `json:"volumes"`
-	Services     []string  `json:"services"`
-	Databases    []string  `json:"databases,omitempty"`
-	Secrets      []string  `json:"secrets,omitempty"`
-	BuildFiles   []string  `json:"build_files,omitempty"`
-	Images       []string  `json:"images,omitempty"`
-	StackSnapVer string    `json:"stacksnap_version"`
-	Encrypted    bool      `json:"encrypted"`
+	StackName  string  `json:"stack_name"`
+	CreatedAt  time.Time `json:"created_at"`
+	ComposeFile string  `json:"compose_file"`
+	Volumes   []string `json:"volumes"`
+	Services   []string `json:"services"`
+	Databases  []string `json:"databases,omitempty"`
+	Secrets   []string `json:"secrets,omitempty"`
+	BuildFiles  []string `json:"build_files,omitempty"`
+	Images    []string `json:"images,omitempty"`
+	StackSnapVer string  `json:"stacksnap_version"`
+	Encrypted  bool   `json:"encrypted"`
 }
 
 
@@ -86,7 +86,7 @@ func BackupStack(client *docker.Client, opts StackBackupOptions) (*StackBackupRe
 
 	preflightResult := PreflightChecks(client, opts)
 	if len(preflightResult.Warnings) > 0 {
-		log("  Pre-flight check warnings:\n")
+		log(" Pre-flight check warnings:\n")
 		for _, warning := range preflightResult.Warnings {
 			icon := "ℹ"
 			if warning.Severity == "warning" {
@@ -94,9 +94,9 @@ func BackupStack(client *docker.Client, opts StackBackupOptions) (*StackBackupRe
 			} else if warning.Severity == "error" {
 				icon = ""
 			}
-			log("%s  %s\n", icon, warning.Message)
+			log("%s %s\n", icon, warning.Message)
 			if warning.Fix != "" {
-				log("    %s\n", warning.Fix)
+				log("  %s\n", warning.Fix)
 			}
 		}
 		if !preflightResult.CanProceed {
@@ -115,13 +115,13 @@ func BackupStack(client *docker.Client, opts StackBackupOptions) (*StackBackupRe
 		stack = s
 	} else if opts.ProjectName != "" {
 
-		log("ℹ  Using label-based discovery for project: %s\n", opts.ProjectName)
+		log("ℹ Using label-based discovery for project: %s\n", opts.ProjectName)
 		vols, err := client.ListVolumesForProject(opts.ProjectName)
 		if err != nil {
 			log("Warning: failed to list volumes for project %s: %v\n", opts.ProjectName, err)
 		}
 		stack = &compose.Stack{
-			Name:         opts.ProjectName,
+			Name:     opts.ProjectName,
 			NamedVolumes: vols,
 			IsStandalone: true,
 		}
@@ -134,7 +134,7 @@ func BackupStack(client *docker.Client, opts StackBackupOptions) (*StackBackupRe
 		log(" Encryption enabled (AES-256-CTR)\n")
 	}
 	if opts.StorageProvider != nil {
-		log("  Uploading to remote storage\n")
+		log(" Uploading to remote storage\n")
 	}
 
 
@@ -157,7 +157,7 @@ func BackupStack(client *docker.Client, opts StackBackupOptions) (*StackBackupRe
 
 		uploadErrCh = make(chan error, 1)
 		go func() {
-			log("  Starting upload to: %s\n", filename)
+			log(" Starting upload to: %s\n", filename)
 			err := opts.StorageProvider.Upload(ctx, filename, pr)
 			if err != nil {
 				log(" Upload failed: %v\n", err)
@@ -239,7 +239,7 @@ func BackupStack(client *docker.Client, opts StackBackupOptions) (*StackBackupRe
 				}
 			}
 			if !alreadyTracked {
-				log("ℹ  Found implicit volume mount: %s (Adding to backup)\n", vName)
+				log("ℹ Found implicit volume mount: %s (Adding to backup)\n", vName)
 				stack.NamedVolumes = append(stack.NamedVolumes, vName)
 			}
 		}
@@ -254,11 +254,11 @@ func BackupStack(client *docker.Client, opts StackBackupOptions) (*StackBackupRe
 
 				dbInfo, _ := database.DetectDatabase(client, ctr.ID)
 				if dbInfo != nil && dbInfo.Type != database.DatabaseUnknown {
-					log("ℹ  Skipping pause for DB container: %s\n", ctr.Name)
+					log("ℹ Skipping pause for DB container: %s\n", ctr.Name)
 					continue
 				}
 
-				log("⏸  Pausing %s...\n", ctr.Name)
+				log("⏸ Pausing %s...\n", ctr.Name)
 				if err := client.PauseContainer(ctr.ID); err != nil {
 
 					for _, id := range pausedContainers {
@@ -273,7 +273,7 @@ func BackupStack(client *docker.Client, opts StackBackupOptions) (*StackBackupRe
 
 		defer func() {
 			for _, id := range pausedContainers {
-				log("  Resuming container...\n")
+				log(" Resuming container...\n")
 				client.UnpauseContainer(id)
 			}
 		}()
@@ -297,7 +297,7 @@ func BackupStack(client *docker.Client, opts StackBackupOptions) (*StackBackupRe
 			for _, ctr := range allContainers {
 
 				if ctr.State == "running" || ctr.State == "paused" {
-					log("   - Snapshotting %s...\n", ctr.Name)
+					log("  - Snapshotting %s...\n", ctr.Name)
 
 
 					ts := time.Now().Format("20060102150405")
@@ -309,7 +309,7 @@ func BackupStack(client *docker.Client, opts StackBackupOptions) (*StackBackupRe
 
 					imgID, err := client.CommitContainer(ctr.ID, backupTag)
 					if err != nil {
-						log("  Failed to commit container %s: %v\n", ctr.Name, err)
+						log(" Failed to commit container %s: %v\n", ctr.Name, err)
 						continue
 					}
 
@@ -319,7 +319,7 @@ func BackupStack(client *docker.Client, opts StackBackupOptions) (*StackBackupRe
 
 
 					if err := client.SaveImage(backupTag, outPath); err != nil {
-						log("  Failed to save image %s: %v\n", backupTag, err)
+						log(" Failed to save image %s: %v\n", backupTag, err)
 						client.RemoveImage(imgID)
 						continue
 					}
@@ -343,7 +343,7 @@ func BackupStack(client *docker.Client, opts StackBackupOptions) (*StackBackupRe
 				}
 			}
 		} else {
-			log("  Failed to create temp dir for images: %v\n", err)
+			log(" Failed to create temp dir for images: %v\n", err)
 		}
 	}
 
@@ -356,7 +356,7 @@ func BackupStack(client *docker.Client, opts StackBackupOptions) (*StackBackupRe
 				continue
 			}
 
-			log("  Dumping %s database from %s...\n", dbInfo.Type, ctr.Name)
+			log(" Dumping %s database from %s...\n", dbInfo.Type, ctr.Name)
 
 
 			isCurrentlyPaused := false
@@ -373,7 +373,7 @@ func BackupStack(client *docker.Client, opts StackBackupOptions) (*StackBackupRe
 
 			dumpReader, err := database.Dump(client, dbInfo)
 			if err != nil {
-				log("  Warning: failed to dump database %s: %v\n", ctr.Name, err)
+				log(" Warning: failed to dump database %s: %v\n", ctr.Name, err)
 				if isCurrentlyPaused {
 					client.PauseContainer(ctr.ID)
 				}
@@ -388,13 +388,13 @@ func BackupStack(client *docker.Client, opts StackBackupOptions) (*StackBackupRe
 
 			dumpData, err := io.ReadAll(dumpReader)
 			if err != nil {
-				log("  Warning: failed to read database dump: %v\n", err)
+				log(" Warning: failed to read database dump: %v\n", err)
 				continue
 			}
 
 			dumpFilename := fmt.Sprintf("%s_%s_dump.sql", ctr.Name, dbInfo.Type)
 			if err := addToTar(tarWriter, dumpFilename, dumpData); err != nil {
-				log("  Warning: failed to add dump to archive: %v\n", err)
+				log(" Warning: failed to add dump to archive: %v\n", err)
 				continue
 			}
 			databasesDumped = append(databasesDumped, string(dbInfo.Type))
@@ -469,7 +469,7 @@ func BackupStack(client *docker.Client, opts StackBackupOptions) (*StackBackupRe
 
 		tempFile, err := os.CreateTemp("", "stacksnap-vol-*.tar")
 		if err != nil {
-			log("  Failed to create temp file: %v\n", err)
+			log(" Failed to create temp file: %v\n", err)
 			continue
 		}
 
@@ -480,7 +480,7 @@ func BackupStack(client *docker.Client, opts StackBackupOptions) (*StackBackupRe
 		if backupErr != nil {
 			tempFile.Close()
 			os.Remove(tempFile.Name())
-			log("  Failed to backup volume %s: %v\n", volName, backupErr)
+			log(" Failed to backup volume %s: %v\n", volName, backupErr)
 			continue
 		}
 
@@ -488,23 +488,23 @@ func BackupStack(client *docker.Client, opts StackBackupOptions) (*StackBackupRe
 		tempFile.Seek(0, 0)
 
 		header := &tar.Header{
-			Name:    filepath.Join("volumes", volName+".tar"),
-			Size:    size,
-			Mode:    0644,
+			Name:  filepath.Join("volumes", volName+".tar"),
+			Size:  size,
+			Mode:  0644,
 			ModTime: time.Now(),
 		}
 
 		if err := tarWriter.WriteHeader(header); err != nil {
 			tempFile.Close()
 			os.Remove(tempFile.Name())
-			log("  Failed to write header: %v\n", err)
+			log(" Failed to write header: %v\n", err)
 			continue
 		}
 
 		if _, err := io.Copy(tarWriter, tempFile); err != nil {
 			tempFile.Close()
 			os.Remove(tempFile.Name())
-			log("  Failed to copy volume data: %v\n", err)
+			log(" Failed to copy volume data: %v\n", err)
 			continue
 		}
 
@@ -530,19 +530,19 @@ func BackupStack(client *docker.Client, opts StackBackupOptions) (*StackBackupRe
 
 
 	metadata := StackMetadata{
-		StackName:    stack.Name,
-		CreatedAt:    time.Now(),
-		ComposeFile:  filepath.Base(stack.ComposeFile),
-		Volumes:      volumesBackedUp,
-		Services:     serviceNames,
-		Databases:    databasesDumped,
-		Secrets:      metadataSecrets,
-		BuildFiles:   metadataBuildFiles,
-		Images:       backedUpImages,
+		StackName:  stack.Name,
+		CreatedAt:  time.Now(),
+		ComposeFile: filepath.Base(stack.ComposeFile),
+		Volumes:   volumesBackedUp,
+		Services:   serviceNames,
+		Databases:  databasesDumped,
+		Secrets:   metadataSecrets,
+		BuildFiles:  metadataBuildFiles,
+		Images:    backedUpImages,
 		StackSnapVer: "1.0",
-		Encrypted:    opts.EncryptionKey != nil,
+		Encrypted:  opts.EncryptionKey != nil,
 	}
-	metadataJSON, _ := json.MarshalIndent(metadata, "", "  ")
+	metadataJSON, _ := json.MarshalIndent(metadata, "", " ")
 	addToTar(tarWriter, "metadata.json", metadataJSON)
 
 
@@ -582,23 +582,23 @@ func BackupStack(client *docker.Client, opts StackBackupOptions) (*StackBackupRe
 		duration.Round(time.Millisecond))
 
 	return &StackBackupResult{
-		StackName:        stack.Name,
-		OutputPath:       filename,
-		Size:             finalSize,
-		Duration:         duration,
-		VolumesBackedUp:  volumesBackedUp,
-		DatabasesDumped:  databasesDumped,
+		StackName:    stack.Name,
+		OutputPath:    filename,
+		Size:       finalSize,
+		Duration:     duration,
+		VolumesBackedUp: volumesBackedUp,
+		DatabasesDumped: databasesDumped,
 		PausedContainers: len(pausedContainers),
-		Encrypted:        opts.EncryptionKey != nil,
+		Encrypted:    opts.EncryptionKey != nil,
 	}, nil
 }
 
 
 func addToTar(tw *tar.Writer, name string, data []byte) error {
 	header := &tar.Header{
-		Name:    name,
-		Size:    int64(len(data)),
-		Mode:    0644,
+		Name:  name,
+		Size:  int64(len(data)),
+		Mode:  0644,
 		ModTime: time.Now(),
 	}
 

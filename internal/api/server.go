@@ -21,12 +21,12 @@ import (
 
 
 type Server struct {
-	mux           *http.ServeMux
-	provider      storage.Provider
-	config        *config.Config
+	mux      *http.ServeMux
+	provider   storage.Provider
+	config    *config.Config
 	setupRequired bool
-	uiFS          fs.FS
-	broker        *EventBroker
+	uiFS     fs.FS
+	broker    *EventBroker
 }
 
 
@@ -40,7 +40,7 @@ func NewServer(provider storage.Provider, uiFS fs.FS) *Server {
 		if err != nil {
 
 			setupRequired = true
-			fmt.Println("  Config not found. Starting in SETUP MODE.")
+			fmt.Println(" Config not found. Starting in SETUP MODE.")
 		} else {
 
 			fmt.Println(" Config loaded. Starting in DASHBOARD MODE.")
@@ -76,12 +76,12 @@ func NewServer(provider storage.Provider, uiFS fs.FS) *Server {
 	}
 
 	s := &Server{
-		mux:           http.NewServeMux(),
-		provider:      provider,
-		config:        cfg,
+		mux:      http.NewServeMux(),
+		provider:   provider,
+		config:    cfg,
 		setupRequired: setupRequired,
-		uiFS:          uiFS,
-		broker:        NewEventBroker(),
+		uiFS:     uiFS,
+		broker:    NewEventBroker(),
 	}
 	s.routes()
 	return s
@@ -104,18 +104,18 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 
 type EventBroker struct {
-	clients    map[chan string]bool
+	clients  map[chan string]bool
 	newClients chan chan string
-	defunct    chan chan string
-	messages   chan string
+	defunct  chan chan string
+	messages  chan string
 }
 
 func NewEventBroker() *EventBroker {
 	b := &EventBroker{
-		clients:    make(map[chan string]bool),
+		clients:  make(map[chan string]bool),
 		newClients: make(chan chan string),
-		defunct:    make(chan chan string),
-		messages:   make(chan string),
+		defunct:  make(chan chan string),
+		messages:  make(chan string),
 	}
 	go b.listen()
 	return b
@@ -300,7 +300,7 @@ func (s *Server) handleSetup(w http.ResponseWriter, r *http.Request) {
 	s.setupRequired = false
 
 	json.NewEncoder(w).Encode(map[string]string{
-		"status":  "setup_complete",
+		"status": "setup_complete",
 		"message": "Configuration saved. Dashboard ready.",
 	})
 }
@@ -316,7 +316,7 @@ func (s *Server) handleListStacks(w http.ResponseWriter, r *http.Request) {
 
 	allContainers, err := client.ListAllContainers()
 	if err != nil {
-		fmt.Printf("  Warning: failed to list all containers: %v\n", err)
+		fmt.Printf(" Warning: failed to list all containers: %v\n", err)
 	}
 
 	trackedIDs := make(map[string]bool)
@@ -382,8 +382,8 @@ func (s *Server) handleListStacks(w http.ResponseWriter, r *http.Request) {
 
 		if stack == nil {
 			stack = &compose.Stack{
-				Name:     projectName,
-				Status:   "Running",
+				Name:   projectName,
+				Status:  "Running",
 				Services: make(map[string]compose.ServiceDiagnostics),
 			}
 		}
@@ -398,9 +398,9 @@ func (s *Server) handleListStacks(w http.ResponseWriter, r *http.Request) {
 
 			stack.Services[svcName] = compose.ServiceDiagnostics{
 				ContainerID: ctr.ID,
-				State:       ctr.State,
-				Health:      ctr.Health,
-				Paused:      ctr.Paused,
+				State:    ctr.State,
+				Health:   ctr.Health,
+				Paused:   ctr.Paused,
 			}
 			if ctr.State == "running" {
 				runningCount++
@@ -421,10 +421,10 @@ func (s *Server) handleListStacks(w http.ResponseWriter, r *http.Request) {
 
 
 	standaloneStack := &compose.Stack{
-		Name:         "Standalone Containers",
-		Status:       "Running",
+		Name:     "Standalone Containers",
+		Status:    "Running",
 		IsStandalone: true,
-		Services:     make(map[string]compose.ServiceDiagnostics),
+		Services:   make(map[string]compose.ServiceDiagnostics),
 	}
 
 	standaloneCount := 0
@@ -432,9 +432,9 @@ func (s *Server) handleListStacks(w http.ResponseWriter, r *http.Request) {
 		if !trackedIDs[ctr.ID] {
 			standaloneStack.Services[ctr.Name] = compose.ServiceDiagnostics{
 				ContainerID: ctr.ID,
-				State:       ctr.State,
-				Health:      ctr.Health,
-				Paused:      ctr.Paused,
+				State:    ctr.State,
+				Health:   ctr.Health,
+				Paused:   ctr.Paused,
 			}
 			standaloneCount++
 		}
@@ -490,12 +490,12 @@ func (s *Server) handleBackups(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Location        string `json:"location"`
-		ProjectName     string `json:"project_name"`
-		Pause           bool   `json:"pause"`
-		IncludeDB       bool   `json:"include_db"`
-		Verify          bool   `json:"verify"`
-		SnapshotImages  bool   `json:"snapshot_images"`
+		Location    string `json:"location"`
+		ProjectName   string `json:"project_name"`
+		Pause      bool  `json:"pause"`
+		IncludeDB    bool  `json:"include_db"`
+		Verify     bool  `json:"verify"`
+		SnapshotImages bool  `json:"snapshot_images"`
 		EncryptionKeyID string `json:"encryption_key_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -538,14 +538,14 @@ func (s *Server) handleBackups(w http.ResponseWriter, r *http.Request) {
 		}
 
 		res, err := backup.BackupStack(dockerClient, backup.StackBackupOptions{
-			Directory:       req.Location,
-			ProjectName:     req.ProjectName,
+			Directory:    req.Location,
+			ProjectName:   req.ProjectName,
 			PauseContainers: req.Pause,
 			IncludeDatabase: req.IncludeDB,
-			SnapshotImages:  req.SnapshotImages,
+			SnapshotImages: req.SnapshotImages,
 			StorageProvider: s.provider,
-			EncryptionKey:   key,
-			Logger:          logFunc,
+			EncryptionKey:  key,
+			Logger:     logFunc,
 		})
 
 		if err != nil {
@@ -578,7 +578,7 @@ func (s *Server) handleBackups(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusAccepted)
 	json.NewEncoder(w).Encode(map[string]string{
-		"status":  "backup_started",
+		"status": "backup_started",
 		"message": "Backup job has been queued",
 	})
 }
@@ -590,7 +590,7 @@ func (s *Server) handleRestore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Filename    string `json:"filename"`
+		Filename  string `json:"filename"`
 		ProjectName string `json:"project_name"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -627,12 +627,12 @@ func (s *Server) handleRestore(w http.ResponseWriter, r *http.Request) {
 			}
 
 			err := backup.RestoreStack(dockerClient, backup.StackRestoreOptions{
-				StackName:       req.ProjectName,
-				InputPath:       req.Filename,
+				StackName:    req.ProjectName,
+				InputPath:    req.Filename,
 				StorageProvider: s.provider,
-				EncryptionKey:   keyBytes,
-				Logger:          logFunc,
-				Context:         ctx,
+				EncryptionKey:  keyBytes,
+				Logger:     logFunc,
+				Context:     ctx,
 			})
 			if err != nil {
 				fmt.Printf(" Restore failed: %v\n", err)
@@ -695,7 +695,7 @@ func (s *Server) handleHistory(w http.ResponseWriter, r *http.Request) {
 	resp := make([]HistoryResponseItem, len(items))
 	for i, item := range items {
 		resp[i] = HistoryResponseItem{
-			BackupItem:   item,
+			BackupItem:  item,
 			Verification: verfMap[item.Key],
 		}
 	}
@@ -729,9 +729,9 @@ func (s *Server) handleVerify(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 
 		result = &backup.VerificationResult{
-			BackupKey:    req.Key,
-			Verified:     false,
-			TestedAt:     time.Now(),
+			BackupKey:  req.Key,
+			Verified:   false,
+			TestedAt:   time.Now(),
 			ErrorMessage: err.Error(),
 		}
 	}
@@ -770,9 +770,9 @@ func (s *Server) handleHistoryPeek(w http.ResponseWriter, r *http.Request) {
 	}
 
 	files, err := backup.PeekBackup(backup.StackRestoreOptions{
-		InputPath:       key,
+		InputPath:    key,
 		StorageProvider: s.provider,
-		Context:         context.Background(),
+		Context:     context.Background(),
 
 	})
 	if err != nil {
@@ -816,8 +816,8 @@ func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"total_backups": totalBackups,
-		"success_rate":  100.0,
-		"storage_used":  sizeStr,
+		"success_rate": 100.0,
+		"storage_used": sizeStr,
 	})
 }
 
@@ -851,8 +851,8 @@ func listLocalBackups() []storage.BackupItem {
 				(len(name) > 4 && name[len(name)-4:] == ".enc") {
 				info, _ := entry.Info()
 				items = append(items, storage.BackupItem{
-					Key:          name,
-					Size:         info.Size(),
+					Key:     name,
+					Size:     info.Size(),
 					LastModified: info.ModTime(),
 				})
 			}
@@ -957,17 +957,17 @@ func (s *Server) handleSystemHealth(w http.ResponseWriter, r *http.Request) {
 
 
 	resp := map[string]interface{}{
-		"cpu_cores":          info.NCPU,
-		"memory_total":       info.MemTotal,
-		"os_type":            info.OSType,
-		"architecture":       info.Architecture,
-		"containers":         info.Containers,
+		"cpu_cores":     info.NCPU,
+		"memory_total":    info.MemTotal,
+		"os_type":      info.OSType,
+		"architecture":    info.Architecture,
+		"containers":     info.Containers,
 		"containers_running": info.ContainersRunning,
-		"containers_paused":  info.ContainersPaused,
+		"containers_paused": info.ContainersPaused,
 		"containers_stopped": info.ContainersStopped,
-		"images_count":       info.Images,
-		"disk_usage_bytes":   totalSize,
-		"server_version":     info.ServerVersion,
+		"images_count":    info.Images,
+		"disk_usage_bytes":  totalSize,
+		"server_version":   info.ServerVersion,
 	}
 
 	json.NewEncoder(w).Encode(resp)

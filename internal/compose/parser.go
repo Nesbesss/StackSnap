@@ -11,64 +11,64 @@ import (
 
 
 type ComposeFile struct {
-	Version  string                `yaml:"version"`
-	Services map[string]Service    `yaml:"services"`
-	Volumes  map[string]VolumeSpec `yaml:"volumes"`
-	Secrets  map[string]SecretSpec `yaml:"secrets"`
+	Version string        `yaml:"version"`
+	Services map[string]Service  `yaml:"services"`
+	Volumes map[string]VolumeSpec `yaml:"volumes"`
+	Secrets map[string]SecretSpec `yaml:"secrets"`
 }
 
 
 type Service struct {
-	Image       string        `yaml:"image"`
-	Volumes     []string      `yaml:"volumes"`
-	Environment []string      `yaml:"environment"`
-	EnvFile     interface{}   `yaml:"env_file"`
-	Secrets     []interface{} `yaml:"secrets"`
+	Image    string    `yaml:"image"`
+	Volumes   []string   `yaml:"volumes"`
+	Environment []string   `yaml:"environment"`
+	EnvFile   interface{}  `yaml:"env_file"`
+	Secrets   []interface{} `yaml:"secrets"`
 }
 
 
 type VolumeSpec struct {
-	Driver     string            `yaml:"driver"`
+	Driver   string      `yaml:"driver"`
 	DriverOpts map[string]string `yaml:"driver_opts"`
-	External   bool              `yaml:"external"`
+	External  bool       `yaml:"external"`
 }
 
 
 type SecretSpec struct {
-	File     string `yaml:"file"`
-	External bool   `yaml:"external"`
+	File   string `yaml:"file"`
+	External bool  `yaml:"external"`
 }
 
 
 type VolumeMount struct {
-	Source      string
-	Target      string
-	IsNamed     bool
+	Source   string
+	Target   string
+	IsNamed   bool
 	ServiceName string
 }
 
 
 type ServiceDiagnostics struct {
-	ContainerID     string `json:"container_id"`
-	State           string `json:"state"`
-	Health          string `json:"health"`
-	RestartCount    int    `json:"restart_count"`
-	Uptime          string `json:"uptime"`
+	ContainerID   string `json:"container_id"`
+	State      string `json:"state"`
+	Health     string `json:"health"`
+	RestartCount  int  `json:"restart_count"`
+	Uptime     string `json:"uptime"`
 	DiagnosticError string `json:"diagnostic_error"`
-	Paused          bool   `json:"paused"`
+	Paused     bool  `json:"paused"`
 }
 
 
 type Stack struct {
-	Name         string
-	Status       string
-	ComposeFile  string
-	Services     map[string]ServiceDiagnostics
+	Name     string
+	Status    string
+	ComposeFile string
+	Services   map[string]ServiceDiagnostics
 	VolumeMounts []VolumeMount
 	NamedVolumes []string
-	EnvFiles     []string
-	SecretFiles  []string
-	BuildFiles   []string
+	EnvFiles   []string
+	SecretFiles []string
+	BuildFiles  []string
 	IsStandalone bool
 }
 
@@ -123,7 +123,7 @@ func DiscoverStack(dir string) (*Stack, error) {
 	projectName := filepath.Base(absDir)
 
 	stack := &Stack{
-		Name:        projectName,
+		Name:    projectName,
 		ComposeFile: composePath,
 	}
 
@@ -219,9 +219,9 @@ func parseVolumeMount(mount string, serviceName string, namedVolumes map[string]
 	if colonIdx == -1 {
 
 		return VolumeMount{
-			Source:      mount,
-			Target:      mount,
-			IsNamed:     true,
+			Source:   mount,
+			Target:   mount,
+			IsNamed:   true,
 			ServiceName: serviceName,
 		}
 	}
@@ -241,9 +241,9 @@ func parseVolumeMount(mount string, serviceName string, namedVolumes map[string]
 	}
 
 	return VolumeMount{
-		Source:      source,
-		Target:      target,
-		IsNamed:     isNamed,
+		Source:   source,
+		Target:   target,
+		IsNamed:   isNamed,
 		ServiceName: serviceName,
 	}
 }

@@ -1,76 +1,55 @@
 # StackSnap
 
-StackSnap is a lightweight, professional-grade backup and recovery appliance designed specifically for Docker Compose environments. It bridges the gap between manual `tar` commands and complex enterprise backup suites by providing a streamlined, verifiable workflow for containerized applications.
+StackSnap is a precision backup engine for Docker Compose environments. It solves the "trust gap" in self-hosting by providing a verifiable, encrypted, and automated recovery workflow that just works.
 
-### Why StackSnap?
+No more "hoping" your cron job ran correctly. No more manual database dumps. StackSnap handles the orchestration, so you can focus on your code.
 
-Self-hosting complex stacks (Nextcloud, Ghost, Home Assistant) often leads to a "backup gap"—you have the files, but you're not sure if the database dump is consistent or if the restore actually works. StackSnap automates the heavy lifting: it identifies your databases, performs safe hot-dumps, snapshots volumes, and encrypts everything before it leaves your host.
+## Core Pillars
 
-## Key Capabilities
-
-- **Atomic-Style Backups**: Orchestrates database dumps (Postgres, MySQL, Redis) and volume snapshots in a single, coherent archive.
-- **Verification Engine**: Locally validates archives to ensure they aren't corrupted and can actually be extracted.
-- **Hybrid Storage**: Push backups to local storage for speed, or S3-compatible providers (AWS, Backblaze, Minio) for off-site redundancy.
-- **Zero-Knowledge Architecture**: All encryption (AES-256) happens locally. Your storage provider never sees your raw data or your keys.
-- **Real-Time Instrumentation**: Stream verbose operation logs directly to your browser via Server-Sent Events (SSE).
+- **Synchronized Orchestration**: We coordinate database-native exports (Postgres, MariaDB/MySQL, Redis) with filesystem snapshots to ensure a consistent point-in-time recovery.
+- **Zero-Trust Encryption**: Your data is encrypted locally with AES-256-GCM. Your storage provider (S3/Minio) never sees a single byte of raw data.
+- **Streamed Visibility**: Real-time log streaming via SSE gives you absolute certainty during long-running operations.
+- **Verification First**: Every backup can be automatically verified. If it can't be decompressed or decrypted, it's not a backup—it's just a file.
 
 ## Getting Started
 
-### Installation
+### The Quick Way
+Download the [compiled package](StackSnap.pkg) and install it on your Mac.
 
-Download the [latest release package](StackSnap.pkg) for macOS or build from source:
-
+### The Developer Way
 ```bash
 git clone https://github.com/Nesbesss/StackSnap.git
 cd stacksnap
 go build -o stacksnap ./cmd/stacksnap
+./stacksnap
 ```
-
-### Quick Setup
-
-1. Launch the server: `./stacksnap`
-2. Access the dashboard at `http://localhost:8080`.
-3. Follow the onboarding flow to set up your primary storage provider.
-4. Your running Docker Compose projects will be automatically detected.
+Visit `http://localhost:8080` to start the onboarding.
 
 ---
 
-## Frequently Asked Questions
+## Detailed FAQ
 
-### The Basics
+### The Practical Stuff
 
-**How does this differ from just running rsync on /var/lib/docker/volumes?**
-`rsync` on a live volume is dangerous. If a database is writing to a file while `rsync` reads it, you end up with a "torn page"—a corrupted backup that looks fine until you try to restore it. StackSnap uses `docker exec` to trigger native database dump tools (like `pg_dump`) to ensure internal consistency before backing up the volume.
+**Does this scale to 100GB+ volumes?**
+Yes. We stream the archive directly to the storage provider where possible, avoiding massive memory buffers. However, your local disk needs enough temp space for the initial database dump file before encryption.
 
-**Does it support Docker Swarm?**
-Currently, we focus exclusively on Docker Compose/Docker Desktop environments. Swarm support is on our long-term roadmap.
+**What happens if my S3 credentials expire mid-backup?**
+The operation fails gracefully. StackSnap detects the network/auth error, broadcasts a failure to the UI, and cleans up the local staging artifacts. We don't leave "ghost files" on your disk.
 
-### The Hard Questions
+### The Internal "Hard" Questions
 
-**How do you guarantee database consistency without pausing the containers?**
-We use the "Hot Dump" pattern. We initiate a database-level snapshot (e.g., `pg_dump` with `--single-transaction`). This allows the database to remain online for users while we extract a point-in-time consistent state. For non-database volumes, we recommend the "Safe Mode" option in the UI, which briefly pauses the app containers while the volume is archived to prevent file-system-level inconsistencies.
+**How do you handle 'Snapshot Isolation' during a hot dump?**
+We don't just 'copy files'. For Postgres, we use `pg_dump --single-transaction`, which forces the database to provide a snapshot-isolated view of the data. For volumes, we use an 'Atomic Copy' pattern. While it's not a block-level filesystem snapshot (like ZFS/LVM), it minimizes the window of inconsistency by pausing the application runtime (if Safe Mode is enabled) during the archive phase.
 
-**Is zero-knowledge encryption useful if the encryption key lives on the same server as the backups?**
-If you store your backups and your keys on the same physical disk, no. However, StackSnap is designed to push backups to *remote* S3 storage. By keeping the encryption key local (or in your head) and only shipping encrypted blobs to the cloud, you protect yourself against a compromise of your cloud provider. Even if an attacker gains full access to your S3 bucket, they cannot read your data.
+**Go is garbage-collected. Does the encryption process cause GC spikes on large archives?**
+We use a streaming buffer approach. We read from the source tarball in 32KB chunks, run them through the AES-256-GCM cipher, and write the result immediately. This keeps the memory footprint (RSS) stable regardless of whether you're backing up 10MB or 10GB.
 
-**What happens if a backup fails halfway through?**
-StackSnap follows an "all-or-nothing" principle. We write to a temporary staging area. Only after the database dump, volume capture, and encryption are successfully completed do we "promote" the backup to your storage provider. If an operation fails, we automatically clean up the partial artifacts to prevent disk bloat.
+**What if the StackSnap process itself crashes during a restore?**
+This is the most critical failure mode. During restore, we capture the state of your existing containers. If a crash occurs during extraction, your containers might be stopped. However, because we don't 'delete' your old data until the new data is extractable, you can always manually restart your old stack using the existing Docker volumes. StackSnap acts as an orchestrator, not a black-box storage layer.
 
-**Can I restore a backup to a different server?**
-Yes. Since StackSnap archives the `docker-compose.yml` along with the data, you can install StackSnap on a fresh machine, connect your S3 bucket, and hit "Restore". It will pull the images, recreate the volumes, and bring the stack back exactly as it was.
-
----
-
-## Technical Specs
-
-- **Backend**: Go 1.21+ (Docker SDK, AWS SDK)
-- **Frontend**: React 18, TypeScript, Tailwind CSS
-- **Encryption**: AES-256-GCM
-- **Communication**: REST API + SSE for real-time logs
-
-## Safety & Disclaimer
-
-StackSnap is currently in Beta. While we use it to protect our own infrastructure, you should always perform "Fire Drills"—regularly test your restore process to ensure your configuration and keys are correct. The authors are not responsible for data loss.
+**How do you prevent 'Version Drift' if I restore an old backup to a newer version of Docker Compose?**
+Each backup includes the exact `docker-compose.yml` that was active at the time of the backup. When you restore, we use that specific manifest to recreate the services. This ensures that even if you've changed your local files in the meantime, the restored environment matches the data exactly.
 
 ---
-Licensed under MIT.
+Built by engineers, for engineers. Distributed under MIT.

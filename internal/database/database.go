@@ -15,17 +15,17 @@ type DatabaseType string
 
 const (
 	DatabasePostgres DatabaseType = "postgres"
-	DatabaseMySQL    DatabaseType = "mysql"
-	DatabaseMongo    DatabaseType = "mongodb"
-	DatabaseUnknown  DatabaseType = "unknown"
+	DatabaseMySQL  DatabaseType = "mysql"
+	DatabaseMongo  DatabaseType = "mongodb"
+	DatabaseUnknown DatabaseType = "unknown"
 )
 
 
 type DatabaseInfo struct {
-	ContainerID   string
+	ContainerID  string
 	ContainerName string
-	Type          DatabaseType
-	Image         string
+	Type     DatabaseType
+	Image     string
 }
 
 
@@ -55,10 +55,10 @@ func DetectDatabase(client *docker.Client, containerID string) (*DatabaseInfo, e
 	}
 
 	return &DatabaseInfo{
-		ContainerID:   containerID,
+		ContainerID:  containerID,
 		ContainerName: name,
-		Type:          dbType,
-		Image:         info.Config.Image,
+		Type:     dbType,
+		Image:     info.Config.Image,
 	}, nil
 }
 

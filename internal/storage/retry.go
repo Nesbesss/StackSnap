@@ -12,22 +12,22 @@ import (
 
 
 type RetryConfig struct {
-	MaxAttempts   int
-	InitialDelay  time.Duration
-	MaxDelay      time.Duration
+	MaxAttempts  int
+	InitialDelay time.Duration
+	MaxDelay   time.Duration
 	BackoffFactor float64
-	Jitter        float64
-	OnRetry       func(attempt int, err error, nextDelay time.Duration)
+	Jitter    float64
+	OnRetry    func(attempt int, err error, nextDelay time.Duration)
 }
 
 
 func DefaultRetryConfig() RetryConfig {
 	return RetryConfig{
-		MaxAttempts:   3,
-		InitialDelay:  1 * time.Second,
-		MaxDelay:      30 * time.Second,
+		MaxAttempts:  3,
+		InitialDelay: 1 * time.Second,
+		MaxDelay:   30 * time.Second,
 		BackoffFactor: 2.0,
-		Jitter:        0.1,
+		Jitter:    0.1,
 	}
 }
 
@@ -147,14 +147,14 @@ func WithRetry(ctx context.Context, cfg RetryConfig, fn func() error) error {
 
 type RetryingProvider struct {
 	Provider Provider
-	Config   RetryConfig
+	Config  RetryConfig
 }
 
 
 func NewRetryingProvider(p Provider, cfg RetryConfig) *RetryingProvider {
 	return &RetryingProvider{
 		Provider: p,
-		Config:   cfg,
+		Config:  cfg,
 	}
 }
 

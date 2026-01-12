@@ -10,8 +10,8 @@ import (
 
 
 type ParallelConfig struct {
-	MaxWorkers           int
-	UseParallelGzip      bool
+	MaxWorkers      int
+	UseParallelGzip   bool
 	GzipCompressionLevel int
 }
 
@@ -26,8 +26,8 @@ func DefaultParallelConfig() ParallelConfig {
 	}
 
 	return ParallelConfig{
-		MaxWorkers:           workers,
-		UseParallelGzip:      true,
+		MaxWorkers:      workers,
+		UseParallelGzip:   true,
 		GzipCompressionLevel: 6,
 	}
 }
@@ -40,10 +40,10 @@ func pigzAvailable() bool {
 
 
 type ParallelGzipWriter struct {
-	cmd    *exec.Cmd
-	stdin  io.WriteCloser
+	cmd  *exec.Cmd
+	stdin io.WriteCloser
 	stdout io.Writer
-	done   chan error
+	done  chan error
 }
 
 
@@ -85,10 +85,10 @@ func NewParallelGzipWriter(w io.Writer, level int, threads int) (io.WriteCloser,
 	}()
 
 	return &ParallelGzipWriter{
-		cmd:    cmd,
-		stdin:  stdin,
+		cmd:  cmd,
+		stdin: stdin,
 		stdout: w,
-		done:   done,
+		done:  done,
 	}, nil
 }
 
@@ -110,8 +110,8 @@ func (p *ParallelGzipWriter) Close() error {
 type VolumeBackupJob struct {
 	VolumeName string
 	OutputPath string
-	Error      error
-	Size       int64
+	Error   error
+	Size    int64
 }
 
 
@@ -152,7 +152,7 @@ func ParallelVolumeBackup(
 			if err != nil {
 				result = &VolumeBackupJob{
 					VolumeName: volumeName,
-					Error:      err,
+					Error:   err,
 				}
 			}
 
